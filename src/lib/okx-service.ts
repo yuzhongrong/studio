@@ -75,9 +75,9 @@ export function calculateRSI(closePrices: number[], period: number = 14): number
  * @param tokenContractAddress The contract address of the token.
  * @param bar The time frame for the candles (e.g., '5m', '1H').
  * @param limit The number of candles to retrieve.
- * @returns A promise that resolves to an array of candles.
+ * @returns A promise that resolves to an object containing parsed and raw data.
  */
-export async function fetchOkxCandles(tokenAddress: string, bar: '5m' | '1H', limit: number): Promise<Candle[]> {
+export async function fetchOkxCandles(tokenAddress: string, bar: '5m' | '1H', limit: number): Promise<{ parsedData: Candle[], rawData: any }> {
     const url = `https://web3.okx.com/api/v5/dex/market/candles?chainIndex=501&tokenContractAddress=${tokenAddress}&bar=${bar}&limit=${limit}`;
 
     const headers = {
@@ -100,11 +100,10 @@ export async function fetchOkxCandles(tokenAddress: string, bar: '5m' | '1H', li
     }
 
     if (!jsonResponse.data || !Array.isArray(jsonResponse.data)) {
-        return [];
+        return { parsedData: [], rawData: [] };
     }
     
-    // The data is returned with the most recent candle first.
-    return jsonResponse.data.map((d: string[]) => ({
+    const parsedData = jsonResponse.data.map((d: string[]) => ({
         timestamp: parseInt(d[0], 10),
         open: parseFloat(d[1]),
         high: parseFloat(d[2]),
@@ -112,4 +111,6 @@ export async function fetchOkxCandles(tokenAddress: string, bar: '5m' | '1H', li
         close: parseFloat(d[4]),
         volume: parseFloat(d[5]),
     }));
+    
+    return { parsedData, rawData: jsonResponse.data };
 }

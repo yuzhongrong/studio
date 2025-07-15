@@ -163,9 +163,9 @@ export async function updateRsiData() {
                     continue;
                 }
 
-                const candles5m = await fetchOkxCandles(tokenContractAddress, '5m', 200);
+                const { parsedData: candles5m, rawData: raw5m } = await fetchOkxCandles(tokenContractAddress, '5m', 200);
                 await sleep(1000);
-                const candles1h = await fetchOkxCandles(tokenContractAddress, '1H', 200);
+                const { parsedData: candles1h, rawData: raw1h } = await fetchOkxCandles(tokenContractAddress, '1H', 200);
                 
                 const rsi5m = calculateRSI(candles5m.map(c => c.close));
                 const rsi1h = calculateRSI(candles1h.map(c => c.close));
@@ -174,8 +174,8 @@ export async function updateRsiData() {
                     tokenContractAddress: tokenContractAddress,
                     'rsi-5m': rsi5m,
                     'rsi-1h': rsi1h,
-                    'rsi_200_5m': candles5m,
-                    'rsi_200_1h': candles1h,
+                    'rsi_200_5m': raw5m,
+                    'rsi_200_1h': raw1h,
                     lastUpdated: new Date()
                 };
 
