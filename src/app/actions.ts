@@ -2,7 +2,7 @@
 
 import { suggestFilters, SuggestFiltersInput } from '@/ai/flows/suggest-filters';
 import { getDb } from '@/lib/mongodb';
-import { fetchOkxCandlesAndCalculateRsi } from '@/lib/okx-service';
+import { fetchOkxCandles, calculateRSI } from '@/lib/okx-service';
 
 function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -26,8 +26,6 @@ async function saveToMongo(data: any) {
                     item.baseToken.address !== solAddress &&
                     allowedQuoteTokens.includes(item.quoteToken.address)
                 ) {
-                    // Use replaceOne with upsert to either insert a new document 
-                    // or completely replace an existing one.
                     return {
                         replaceOne: {
                             filter: { _id: item.pairAddress },
@@ -153,21 +151,39 @@ export async function updateRsiData() {
             }
 
             try {
-                const rsiData = await fetchOkxCandlesAndCalculateRsi(tokenContractAddress);
+                // Fetch 5m data
+                const candles5m = await fetchOkxCandles(tokenContractAddress, '5m');
+                const rsi5m = calculateRSI(candles5m.map(c => c.close));
                 
-                if(rsiData) {
-                  await rsiCollection.updateOne(
-                      { _id: tokenContractAddress },
-                      { $set: { ...rsiData, _id: tokenContractAddress, lastUpdated: new Date() } },
-                      { upsert: true }
-                  );
-                  updatedCount++;
-                }
+                // Wait for 1 second before next request
+                await sleep(1000);
+
+                // Fetch 1h data
+                const candles1h = await fetchOkxCandles(tokenContractAddress, '1h');
+                const rsi1h = calculateRSI(candles1h.map(c => c.close));
+
+                const rsiDataToSave = {
+                    _id: tokenContractAddress,
+                    'rsi-5m': rsi5m,
+                    'rsi-1h': rsi1h,
+                    'rsd_200_5m': candles5m,
+                    lastUpdated: new Date()
+                };
+
+                await rsiCollection.updateOne(
+                    { _id: tokenContractAddress },
+                    { $set: rsiDataToSave },
+                    { upsert: true }
+                );
+                updatedCount++;
                 
+                // Wait another second before processing next pair in the loop
                 await sleep(1000);
 
             } catch (error: any) {
                 console.error(`Failed to process RSI for ${tokenContractAddress}: ${error.message}`);
+                // Wait a second even if there's an error to avoid spamming a broken request
+                await sleep(1000);
             }
         }
 
