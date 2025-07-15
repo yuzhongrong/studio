@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2, Search, Ship, Wand2 } from "lucide-react";
+import { Database, Loader2, Search, Ship, Wand2 } from "lucide-react";
 import React, { useEffect, useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -29,13 +29,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { fetchApiData, getFilterSuggestions } from "./actions";
+import { fetchApiData, getFilterSuggestions, getMongoData } from "./actions";
 
 const formSchema = z.object({
   endpoint: z
     .string()
     .url({ message: "Please enter a valid URL." })
-    .default("https://jsonplaceholder.typicode.com/users"),
+    .default("https://api.dexscreener.com/latest/dex/pairs/solana/8ujpQXxnnWvRohU2oCe3eaSzoL7paU2uj3fEn4Zp72US,6miPsFV3THUFh1r25JYUHdZsM6q9xGqZ5>Artificial,h61rDwxnG9woyxsVQP7zuA6kLFpb3NvnRQeoiSdVpump"),
 });
 
 const filterSchema = z.object({
@@ -48,17 +48,19 @@ export default function Home() {
   const { toast } = useToast();
   const [isFetchPending, startFetchTransition] = useTransition();
   const [isSuggestPending, startSuggestTransition] = useTransition();
+  const [isDbFetchPending, startDbFetchTransition] = useTransition();
 
   const [rawData, setRawData] = useState<any>(null);
   const [filteredData, setFilteredData] = useState<any[] | null>(null);
   const [suggestedFilters, setSuggestedFilters] = useState<string[]>([]);
   const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState("filtered");
+  const [dbData, setDbData] = useState<any[] | null>(null);
 
   const apiForm = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      endpoint: "https://jsonplaceholder.typicode.com/users",
+      endpoint: "https://api.dexscreener.com/latest/dex/pairs/solana/8ujpQXxnnWvRohU2oCe3eaSzoL7paU2uj3fEn4Zp72US,6miPsFV3THUFh1r25JYUHdZsM6q9xGqZ5>Artificial,h61rDwxnG9woyxsVQP7zuA6kLFpb3NvnRQeoiSdVpump",
     },
   });
 
@@ -83,8 +85,10 @@ export default function Home() {
         filterForm.reset();
         toast({
           title: "Success!",
-          description: "API data fetched successfully.",
+          description: "API data fetched and saved to DB.",
         });
+        // Invalidate DB data so it can be refetched
+        setDbData(null);
       }
     });
   };
@@ -143,8 +147,10 @@ export default function Home() {
       setFilteredData(null);
       return;
     }
-    let dataToFilter = Array.isArray(rawData) ? [...rawData] : [rawData];
-
+    
+    // The API might return the data in a `pairs` property
+    let dataToFilter = rawData.pairs && Array.isArray(rawData.pairs) ? [...rawData.pairs] : (Array.isArray(rawData) ? [...rawData] : [rawData]);
+    
     if (activeFilters.size === 0) {
       setFilteredData(dataToFilter);
       return;
@@ -168,6 +174,24 @@ export default function Home() {
       });
     }
   }, [rawData, activeFilters, toast]);
+
+  useEffect(() => {
+    if (activeTab === 'database' && !dbData) {
+      startDbFetchTransition(async () => {
+        const result = await getMongoData();
+        if (result.error) {
+          toast({
+            variant: "destructive",
+            title: "Database Error",
+            description: result.error,
+          });
+          setDbData([]);
+        } else {
+          setDbData(result.data);
+        }
+      });
+    }
+  }, [activeTab, dbData, toast]);
 
   return (
     <div className="flex min-h-screen w-full flex-col">
@@ -222,9 +246,10 @@ export default function Home() {
 
           {rawData && (
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="filtered">Filtered Data</TabsTrigger>
                 <TabsTrigger value="raw">Raw JSON</TabsTrigger>
+                <TabsTrigger value="database">Database</TabsTrigger>
               </TabsList>
               <TabsContent value="filtered" className="mt-4">
                 <Card>
@@ -298,7 +323,7 @@ export default function Home() {
                        {filteredData && filteredData.length > 0 ? (
                          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                            {filteredData.map((item, index) => (
-                             <Card key={index} className="overflow-hidden">
+                             <Card key={item?.pairAddress || index} className="overflow-hidden">
                                <ScrollArea className="h-72">
                                  <pre className="p-4 font-code text-xs">
                                    {JSON.stringify(item, null, 2)}
@@ -334,6 +359,43 @@ export default function Home() {
                   </CardContent>
                 </Card>
               </TabsContent>
+              <TabsContent value="database" className="mt-4">
+                 <Card>
+                   <CardHeader>
+                     <CardTitle className="flex items-center gap-2">
+                       <Database />
+                       Data from MongoDB
+                     </CardTitle>
+                     <CardDescription>
+                       This is the data currently stored in your 'pairs' collection.
+                     </CardDescription>
+                   </CardHeader>
+                   <CardContent>
+                     {isDbFetchPending ? (
+                       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                         {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-72 w-full" />)}
+                       </div>
+                     ) : dbData && dbData.length > 0 ? (
+                       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                         {dbData.map((item, index) => (
+                           <Card key={item._id || index} className="overflow-hidden">
+                             <ScrollArea className="h-72">
+                               <pre className="p-4 font-code text-xs">
+                                 {JSON.stringify(item, null, 2)}
+                               </pre>
+                             </ScrollArea>
+                           </Card>
+                         ))}
+                       </div>
+                     ) : (
+                       <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/50 p-12 text-center">
+                         <p className="text-muted-foreground">No data in database.</p>
+                         <p className="text-sm text-muted-foreground/80">Fetch some API data to populate the database.</p>
+                       </div>
+                     )}
+                   </CardContent>
+                 </Card>
+               </TabsContent>
             </Tabs>
           )}
         </div>

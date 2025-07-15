@@ -74,3 +74,24 @@ export async function getFilterSuggestions(input: SuggestFiltersInput) {
         return { suggestions: null, error: 'Failed to get suggestions from AI. Please try again.' };
     }
 }
+
+export async function getMongoData() {
+    if (!process.env.MONGO_URI) {
+        return { data: null, error: 'MongoDB is not configured.' };
+    }
+    try {
+        const db = await getDb();
+        const collection = db.collection('pairs');
+        const data = await collection.find({}).toArray();
+        // The _id field from MongoDB is not serializable for React Server Components by default.
+        // We convert it to a string.
+        const serializableData = data.map(item => ({
+            ...item,
+            _id: item._id.toString(),
+        }));
+        return { data: serializableleData, error: null };
+    } catch (error) {
+        console.error('Failed to fetch data from MongoDB:', error);
+        return { data: null, error: 'Failed to retrieve data from the database.' };
+    }
+}
