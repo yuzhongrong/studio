@@ -1,7 +1,7 @@
 // This is a server-side only module
 import { fetchApiData } from '@/app/actions';
 
-const POLLING_INTERVAL_MS = 15000; // 15 seconds
+const POLLING_INTERVAL_MS = 60000; // 1 minute
 const API_ENDPOINT = "https://dexscreen-scraper-delta.vercel.app/dex?generated_text=%26filters%5BmarketCap%5D%5Bmin%5D%3D2000000%26filters%5BchainIds%5D%5B0%5D%3Dsolana";
 
 let isPolling = false;
