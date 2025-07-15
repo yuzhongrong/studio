@@ -162,21 +162,26 @@ export async function updateRsiData() {
                 const candles1h = await fetchOkxCandles(tokenContractAddress, '1h');
                 const rsi1h = calculateRSI(candles1h.map(c => c.close));
 
-                const rsiDataToSave = {
-                    _id: tokenContractAddress,
-                    'rsi-5m': rsi5m,
-                    'rsi-1h': rsi1h,
-                    'rsd_200_5m': candles5m,
-                    'rsd_200_1h': candles1h,
-                    lastUpdated: new Date()
-                };
+                // Only update if we have valid RSI data for 1h
+                if (rsi1h !== null) {
+                    const rsiDataToSave = {
+                        _id: tokenContractAddress,
+                        'rsi-5m': rsi5m,
+                        'rsi-1h': rsi1h,
+                        'rsd_200_5m': candles5m,
+                        'rsd_200_1h': candles1h,
+                        lastUpdated: new Date()
+                    };
 
-                await rsiCollection.updateOne(
-                    { _id: tokenContractAddress },
-                    { $set: rsiDataToSave },
-                    { upsert: true }
-                );
-                updatedCount++;
+                    await rsiCollection.updateOne(
+                        { _id: tokenContractAddress },
+                        { $set: rsiDataToSave },
+                        { upsert: true }
+                    );
+                    updatedCount++;
+                } else {
+                    console.warn(`Skipping RSI update for ${tokenContractAddress} due to insufficient 1h data (RSI is null).`);
+                }
                 
                 // Wait another second before processing next pair in the loop
                 await sleep(1000);
