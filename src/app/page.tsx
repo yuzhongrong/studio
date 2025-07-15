@@ -35,7 +35,7 @@ const formSchema = z.object({
   endpoint: z
     .string()
     .url({ message: "Please enter a valid URL." })
-    .default("https://api.dexscreener.com/latest/dex/pairs/solana/8ujpQXxnnWvRohU2oCe3eaSzoL7paU2uj3fEn4Zp72US,6miPsFV3THUFh1r25JYUHdZsM6q9xGqZ5>Artificial,h61rDwxnG9woyxsVQP7zuA6kLFpb3NvnRQeoiSdVpump"),
+    .default("https://api.dexscreener.com/latest/dex/pairs/solana/8ujpQXxnnWvRohU2oCe3eaSzoL7paU2uj3fEn4Zp72US,6miPsFV3THUFh1r25JYUHdZsM6q9xGqZ5Artificial,h61rDwxnG9woyxsVQP7zuA6kLFpb3NvnRQeoiSdVpump"),
 });
 
 const filterSchema = z.object({
@@ -60,7 +60,7 @@ export default function Home() {
   const apiForm = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      endpoint: "https://api.dexscreener.com/latest/dex/pairs/solana/8ujpQXxnnWvRohU2oCe3eaSzoL7paU2uj3fEn4Zp72US,6miPsFV3THUFh1r25JYUHdZsM6q9xGqZ5>Artificial,h61rDwxnG9woyxsVQP7zuA6kLFpb3NvnRQeoiSdVpump",
+      endpoint: "https://api.dexscreener.com/latest/dex/pairs/solana/8ujpQXxnnWvRohU2oCe3eaSzoL7paU2uj3fEn4Zp72US,6miPsFV3THUFh1r25JYUHdZsM6q9xGqZ5Artificial,h61rDwxnG9woyxsVQP7zuA6kLFpb3NvnRQeoiSdVpump",
     },
   });
 
@@ -202,7 +202,7 @@ export default function Home() {
   }, [activeTab, dbData, toast]);
 
   return (
-    <div className="flex min-h-screen w-full flex-col">
+    <div className="flex min-h-screen w-full flex-col bg-[#F4F2F9]">
       <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm md:px-6">
         <h1 className="flex items-center gap-2 text-xl font-semibold">
           <Ship className="h-6 w-6 text-primary" />

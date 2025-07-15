@@ -13,9 +13,11 @@ async function saveToMongo(data: any) {
         const db = await getDb();
         const collection = db.collection('pairs');
 
+        // Correctly access the 'pairs' array from the root of the data object
         if (data && data.pairs && Array.isArray(data.pairs)) {
             const operations = data.pairs.map((item: any) => {
-                if (item.pairAddress) {
+                // We only process items that have a pairAddress and do not have an Error field.
+                if (item.pairAddress && !item.Error) {
                     return {
                         updateOne: {
                             filter: { _id: item.pairAddress },
@@ -29,13 +31,14 @@ async function saveToMongo(data: any) {
 
             if (operations.length > 0) {
                 const result = await collection.bulkWrite(operations);
-                console.log(`${result.upsertedCount + result.modifiedCount} documents processed in MongoDB.`);
-                return { success: true, message: `${result.upsertedCount + result.modifiedCount} documents saved.` };
+                const count = result.upsertedCount + result.modifiedCount;
+                console.log(`${count} documents processed in MongoDB.`);
+                return { success: true, message: `${count} documents saved to the database.` };
             }
-             return { success: true, message: 'No new data to save.' };
+             return { success: true, message: 'No new valid data to save.' };
         } else {
             // Throw an error if the expected data structure is not found
-            throw new Error("Invalid data structure received from API. Expected a 'pairs' array.");
+            throw new Error("Invalid data structure from API. Expected a 'pairs' array in the response.");
         }
     } catch (error: any) {
         console.error('Failed to save data to MongoDB:', error);
@@ -66,14 +69,14 @@ export async function fetchApiData(url: string) {
 
     // Now we await the save operation and catch potential errors
     try {
-      await saveToMongo(data);
+      const dbResult = await saveToMongo(data);
+      // We return the fetched data and the success message from the DB operation.
+      return { data, error: null, successMessage: dbResult.message };
     } catch (dbError: any) {
       // If DB save fails, we still return the fetched data but include the DB error in the response.
       // This allows the user to see the data while being notified of the DB issue.
       return { data, error: dbError.message };
     }
-
-    return { data, error: null, successMessage: 'API data fetched and saved to DB successfully.' };
 
   } catch (error: any) {
     if (error instanceof TypeError && error.message.includes('fetch failed')) {
