@@ -12,7 +12,6 @@ async function saveToMongo(data: any) {
         const db = await getDb();
         const collection = db.collection('pairs');
 
-        // According to user's JSON, the array is at the 'pairs' key of the root object.
         if (data && data.pairs && Array.isArray(data.pairs)) {
             const operations = data.pairs.map((item: any) => {
                 // We only process items that have a pairAddress and do not have an Error field.
@@ -44,7 +43,7 @@ async function saveToMongo(data: any) {
         console.error('Failed to save data to MongoDB. Full error: ', JSON.stringify(error, null, 2));
         // Provide a user-friendly message, hinting at network issues.
         if (error.name === 'MongoNetworkError' || error.name === 'MongoServerSelectionError') {
-             throw new Error(`Database connection failed. Please check if the server can reach the database at ${process.env.MONGO_URI}. Details: ${error.message}`);
+             throw new Error(`Database connection failed. Please check if the server can reach the database. Details: ${error.message}`);
         }
         throw new Error(`Database save failed: ${error.message}`);
     }
