@@ -67,47 +67,9 @@ function calculateRSI(closePrices: number[], period: number = 14): number | null
   return rsi;
 }
 
-/**
- * Aggregates smaller time-frame candles into larger ones.
- * @param candles The original candle data array.
- * @param factor The aggregation factor (e.g., 12 to aggregate 5m to 1h).
- * @returns An array of aggregated candles.
- */
-function aggregateCandles(candles: Candle[], factor: number): Candle[] {
-    if (candles.length < factor) {
-        return [];
-    }
 
-    const aggregated: Candle[] = [];
-    for (let i = 0; i < candles.length; i += factor) {
-        const chunk = candles.slice(i, i + factor);
-        if (chunk.length < factor) {
-            // Don't process incomplete chunks
-            continue;
-        }
-
-        const first = chunk[0];
-        const last = chunk[chunk.length - 1];
-
-        const high = Math.max(...chunk.map(c => c.high));
-        const low = Math.min(...chunk.map(c => c.low));
-        const volume = chunk.reduce((acc, c) => acc + c.volume, 0);
-
-        aggregated.push({
-            timestamp: first.timestamp,
-            open: first.open,
-            high: high,
-            low: low,
-            close: last.close,
-            volume: volume,
-        });
-    }
-    return aggregated;
-}
-
-
-async function fetchOkxCandles(tokenAddress: string, bar: '5m'): Promise<Candle[]> {
-    const before = Date.now() - 60 * 1000 * 1000; // 60,000,000ms ago
+async function fetchOkxCandles(tokenAddress: string, bar: '5m' | '1H'): Promise<Candle[]> {
+    const before = Date.now();
     const limit = 200;
     const url = `https://web3.okx.com/api/v5/dex/market/candles?chainIndex=501&tokenContractAddress=${tokenAddress}&before=${before}&bar=${bar}&limit=${limit}`;
 
@@ -121,13 +83,13 @@ async function fetchOkxCandles(tokenAddress: string, bar: '5m'): Promise<Candle[
     
     if (!response.ok) {
         const errorBody = await response.text();
-        throw new Error(`OKX API request failed with status ${response.status}: ${errorBody}`);
+        throw new Error(`OKX API request for ${bar} failed with status ${response.status}: ${errorBody}`);
     }
 
     const jsonResponse = await response.json();
 
     if (jsonResponse.code !== '0') {
-        throw new Error(`OKX API returned an error: ${jsonResponse.msg} (code: ${jsonResponse.code})`);
+        throw new Error(`OKX API for ${bar} returned an error: ${jsonResponse.msg} (code: ${jsonResponse.code})`);
     }
 
     if (!jsonResponse.data || !Array.isArray(jsonResponse.data)) {
@@ -151,16 +113,15 @@ async function fetchOkxCandles(tokenAddress: string, bar: '5m'): Promise<Candle[
 export async function fetchOkxCandlesAndCalculateRsi(tokenAddress: string) {
     try {
         const candles5m = await fetchOkxCandles(tokenAddress, '5m');
+        const candles1h = await fetchOkxCandles(tokenAddress, '1H');
         
         // Calculate 5m RSI
         const closePrices5m = candles5m.map(c => c.close);
         const rsi5m = calculateRSI(closePrices5m);
 
-        // Aggregate 5m candles to 1h candles
-        const candles1h = aggregateCandles(candles5m, 12);
+        // Calculate 1h RSI
         const closePrices1h = candles1h.map(c => c.close);
         const rsi1h = calculateRSI(closePrices1h);
-
 
         return {
             tokenContractAddress: tokenAddress,
