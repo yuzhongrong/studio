@@ -116,7 +116,7 @@ export default function Home() {
     if (isPolling) {
       intervalId = setInterval(() => {
         performFetch();
-      }, 5000);
+      }, 15000);
     }
     return () => {
       if (intervalId) {
