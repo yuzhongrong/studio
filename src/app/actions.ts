@@ -12,6 +12,7 @@ async function saveToMongo(data: any) {
         const db = await getDb();
         const collection = db.collection('pairs');
 
+        // According to user's JSON, the array is at the 'pairs' key of the root object.
         if (data && data.pairs && Array.isArray(data.pairs)) {
             const operations = data.pairs.map((item: any) => {
                 // We only process items that have a pairAddress and do not have an Error field.
@@ -35,6 +36,7 @@ async function saveToMongo(data: any) {
             }
              return { success: true, message: 'No new valid data to save.' };
         } else {
+            // Throw an error if the expected structure is not found.
             throw new Error("Invalid data structure from API. Expected a 'pairs' array in the response.");
         }
     } catch (error: any) {
@@ -60,6 +62,7 @@ export async function fetchApiData(url: string) {
       return { data: null, error: `API Error: ${response.status} ${response.statusText}. Details: ${errorText}` };
     }
     
+    // It's crucial to get the text first to handle potential JSON parsing errors
     const responseText = await response.text();
     let data;
     try {
@@ -68,14 +71,17 @@ export async function fetchApiData(url: string) {
          return { data: null, error: 'Failed to parse JSON response. The API might not be returning valid JSON.' };
     }
 
+    // Now, try to save to the database and return any potential errors or success messages.
     try {
       const dbResult = await saveToMongo(data);
       return { data, error: null, successMessage: dbResult.message };
     } catch (dbError: any) {
+      // If db save fails, return the data but also the DB error message.
       return { data, error: dbError.message };
     }
 
   } catch (error: any) {
+    // Handle fetch-specific errors like network issues
     if (error instanceof TypeError && error.message.includes('fetch failed')) {
         return { data: null, error: 'Network error or invalid URL. Please check the API endpoint and your connection.' };
     }
@@ -102,6 +108,7 @@ export async function getMongoData() {
         const db = await getDb();
         const collection = db.collection('pairs');
         const data = await collection.find({}).toArray();
+        // Convert _id to a string for serialization
         const serializableData = data.map(item => ({
             ...item,
             _id: item._id.toString(),

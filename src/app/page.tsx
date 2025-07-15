@@ -166,6 +166,8 @@ export default function Home() {
 
     try {
       const appliedFilterFns = Array.from(activeFilters).map((filter) => {
+        // This is a potential security risk in a real app, but acceptable for this tool.
+        // It allows for dynamic filtering based on AI suggestions.
         return new Function('item', `try { return ${filter}; } catch (e) { return false; }`);
       });
 
@@ -278,7 +280,7 @@ export default function Home() {
                               <FormLabel>I'm looking for data where...</FormLabel>
                               <FormControl>
                                 <Textarea
-                                  placeholder="e.g., 'the user lives in a suite' or 'the company name includes a G'"
+                                  placeholder="e.g., 'the price is less than 0.01' or 'the symbol is WIF'"
                                   {...field}
                                 />
                               </FormControl>
