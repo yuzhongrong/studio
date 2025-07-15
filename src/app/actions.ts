@@ -133,29 +133,30 @@ export async function updateRsiData() {
         const pairs = await pairsCollection.find({}).toArray();
 
         if (pairs.length === 0) {
-            return { success: true, successMessage: "No pairs in database to process." };
+            return { success: true, message: "No pairs in database to process." };
         }
 
         const solAddress = "So11111111111111111111111111111111111111112";
         let updatedCount = 0;
+        let failedCount = 0;
 
         for (const pair of pairs) {
-            let tokenContractAddress = pair.baseToken?.address;
-            if (tokenContractAddress === solAddress) {
-                tokenContractAddress = pair.quoteToken?.address;
-            }
-
-            if (!tokenContractAddress) {
-                console.warn(`Skipping pair ${pair._id} due to missing token address.`);
-                continue;
-            }
-
             try {
+                let tokenContractAddress = pair.baseToken?.address;
+                if (tokenContractAddress === solAddress) {
+                    tokenContractAddress = pair.quoteToken?.address;
+                }
+
+                if (!tokenContractAddress) {
+                    console.warn(`Skipping pair ${pair.pairAddress} due to missing token address.`);
+                    continue;
+                }
+
                 // Fetch 5m data
                 const candles5m = await fetchOkxCandles(tokenContractAddress, '5m');
                 const rsi5m = calculateRSI(candles5m.map(c => c.close));
                 
-                // Wait for 1 second before next request
+                // Wait for 1 second before the next request to respect rate limits
                 await sleep(1000);
 
                 // Fetch 1h data
@@ -178,20 +179,23 @@ export async function updateRsiData() {
                 );
                 updatedCount++;
                 
-                // Wait another second before processing next pair in the loop
+                // Wait another second before processing the next pair in the loop
                 await sleep(1000);
 
             } catch (error: any) {
-                console.error(`Failed to process RSI for ${tokenContractAddress}: ${error.message}`);
-                // Wait a second even if there's an error to avoid spamming a broken request
+                failedCount++;
+                console.error(`Failed to process RSI for pair ${pair.pairAddress} (Token: ${pair.baseToken?.symbol}): ${error.message}`);
+                 // Wait a second even if there's an error to avoid spamming a broken request
                 await sleep(1000);
             }
         }
 
-        return { success: true, successMessage: `Successfully updated RSI for ${updatedCount} tokens.` };
+        const message = `RSI update complete. Successfully updated: ${updatedCount}, Failed: ${failedCount}.`;
+        console.log(message);
+        return { success: true, message: message };
 
     } catch (error: any) {
-        console.error('Failed to update RSI data:', error);
+        console.error('A critical error occurred in updateRsiData:', error);
         return { success: false, error: `Failed to update RSI data: ${error.message}` };
     }
 }

@@ -20,27 +20,29 @@ async function poll() {
   while (isPolling) {
     try {
       console.log('Polling for new dexscreener data...');
-      const result = await fetchApiData(API_ENDPOINT);
-      if (result.error) {
-        console.error('Dexscreener polling error:', result.error);
-      }
-      if (result.successMessage) {
-        console.log('Dexscreener polling success:', result.successMessage);
-      }
-
-      // After fetching new pairs, update RSI data
-      console.log('Updating RSI data from OKX...');
-      const rsiResult = await updateRsiData();
-      if (rsiResult.error) {
-        console.error('RSI update error:', rsiResult.error);
-      }
-      if (rsiResult.successMessage) {
-        console.log('RSI update success:', rsiResult.successMessage);
+      const apiResult = await fetchApiData(API_ENDPOINT);
+      
+      if (apiResult.error) {
+        console.error('Dexscreener polling error:', apiResult.error);
+      } else {
+        console.log('Dexscreener polling success:', apiResult.successMessage);
+        
+        // After successfully fetching new pairs, trigger the RSI data update.
+        console.log('Triggering RSI data update from OKX...');
+        const rsiResult = await updateRsiData();
+        
+        if (rsiResult.error) {
+          console.error('RSI update process finished with an error:', rsiResult.error);
+        } else {
+          console.log('RSI update process finished successfully.', rsiResult.message);
+        }
       }
 
     } catch (error) {
-      console.error('An unexpected error occurred during polling:', error);
+      console.error('An unexpected error occurred during the main polling loop:', error);
     }
+    
+    console.log(`Polling cycle finished. Waiting for ${POLLING_INTERVAL_MS / 1000} seconds...`);
     await sleep(POLLING_INTERVAL_MS);
   }
 
