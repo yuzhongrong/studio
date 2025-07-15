@@ -89,7 +89,7 @@ export async function getMongoData() {
             ...item,
             _id: item._id.toString(),
         }));
-        return { data: serializableleData, error: null };
+        return { data: serializableData, error: null };
     } catch (error) {
         console.error('Failed to fetch data from MongoDB:', error);
         return { data: null, error: 'Failed to retrieve data from the database.' };
