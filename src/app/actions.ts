@@ -9,12 +9,15 @@ function sleep(ms: number) {
 }
 
 async function saveToMongo(data: any) {
-    if (!process.env.MONGO_URI) {
-        console.warn('MONGO_URI not set, skipping database save.');
-        throw new Error('MongoDB URI is not configured on the server.');
+    if (!process.env.MONGO_URI || process.env.MONGO_URI.includes("YOUR_CONNECTION_STRING")) {
+        console.warn('MONGO_URI not set or is a placeholder, skipping database save.');
+        return { success: true, message: 'Database not configured, skipped saving.' };
     }
     try {
         const db = await getDb();
+        if (!db) {
+             return { success: true, message: 'Database not configured, skipped saving.' };
+        }
         const collection = db.collection('pairs');
         const solAddress = "So11111111111111111111111111111111111111112";
         const usdcAddress = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
@@ -104,11 +107,14 @@ export async function getFilterSuggestions(input: SuggestFiltersInput) {
 }
 
 export async function getMongoData() {
-    if (!process.env.MONGO_URI) {
-        return { data: null, error: 'MongoDB is not configured.' };
+    if (!process.env.MONGO_URI || process.env.MONGO_URI.includes("YOUR_CONNECTION_STRING")) {
+        return { data: null, error: 'MongoDB is not configured. Please set MONGO_URI in your .env file.' };
     }
     try {
         const db = await getDb();
+        if (!db) {
+            return { data: null, error: 'MongoDB is not configured. Please set MONGO_URI in your .env file.' };
+        }
         const collection = db.collection('pairs');
         const data = await collection.find({}).toArray();
         const serializableData = data.map(item => ({
@@ -123,11 +129,14 @@ export async function getMongoData() {
 }
 
 export async function updateRsiData() {
-    if (!process.env.MONGO_URI) {
-        return { success: false, error: 'MongoDB is not configured.' };
+    if (!process.env.MONGO_URI || process.env.MONGO_URI.includes("YOUR_CONNECTION_STRING")) {
+        return { success: false, error: 'MongoDB is not configured. Please set MONGO_URI in your .env file.' };
     }
     try {
         const db = await getDb();
+        if (!db) {
+            return { success: false, error: 'MongoDB is not configured. Please set MONGO_URI in your .env file.' };
+        }
         const pairsCollection = db.collection('pairs');
         const rsiCollection = db.collection('rsi_data');
         const pairs = await pairsCollection.find({}).toArray();
@@ -137,14 +146,17 @@ export async function updateRsiData() {
         }
 
         const solAddress = "So11111111111111111111111111111111111111112";
+        const usdcAddress = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
         let updatedCount = 0;
         let failedCount = 0;
 
         for (const pair of pairs) {
             try {
-                let tokenContractAddress = pair.baseToken?.address;
-                if (tokenContractAddress === solAddress) {
-                    tokenContractAddress = pair.quoteToken?.address;
+                let tokenContractAddress;
+                if (pair.baseToken?.address !== solAddress && pair.baseToken?.address !== usdcAddress) {
+                    tokenContractAddress = pair.baseToken.address;
+                } else if (pair.quoteToken?.address !== solAddress && pair.quoteToken?.address !== usdcAddress) {
+                    tokenContractAddress = pair.quoteToken.address;
                 }
                 
                 if (!tokenContractAddress) {
