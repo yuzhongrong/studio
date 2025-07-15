@@ -26,16 +26,16 @@ async function poll() {
         console.error('Dexscreener polling error:', apiResult.error);
       } else {
         console.log('Dexscreener polling success:', apiResult.successMessage);
-        
-        // After successfully fetching new pairs, trigger the RSI data update.
-        console.log('Triggering RSI data update from OKX...');
-        const rsiResult = await updateRsiData();
-        
-        if (rsiResult.error) {
-          console.error('RSI update process finished with an error:', rsiResult.error);
-        } else {
-          console.log('RSI update process finished successfully.', rsiResult.message);
-        }
+      }
+
+      // Trigger the RSI data update independently.
+      console.log('Triggering RSI data update from OKX...');
+      const rsiResult = await updateRsiData();
+      
+      if (rsiResult.error) {
+        console.error('RSI update process finished with an error:', rsiResult.error);
+      } else {
+        console.log('RSI update process finished successfully.', rsiResult.message);
       }
 
     } catch (error) {
