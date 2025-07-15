@@ -7,6 +7,7 @@ const API_ENDPOINT = "https://dexscreen-scraper-delta.vercel.app/dex?generated_t
 
 let isPolling = false;
 let isStarted = false; 
+let isRsiTaskRunning = false; // Execution lock for the RSI task
 
 function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -36,11 +37,19 @@ async function pollDexscreenerData() {
 
 /**
  * Task 2: Periodically fetches candle data from OKX and updates RSI values in the database.
+ * This function uses a lock to prevent overlapping executions.
  */
 async function pollRsiData() {
     console.log('Starting RSI data polling loop.');
     while(isPolling) {
+        if (isRsiTaskRunning) {
+            console.warn('RSI update is still running. Skipping this cycle.');
+            await sleep(RSI_POLLING_INTERVAL_MS);
+            continue;
+        }
+
         try {
+            isRsiTaskRunning = true;
             console.log('Triggering RSI data update from OKX...');
             const rsiResult = await updateRsiData();
             
@@ -51,6 +60,8 @@ async function pollRsiData() {
             }
         } catch (error) {
             console.error('An unexpected error occurred during the RSI polling loop:', error);
+        } finally {
+            isRsiTaskRunning = false;
         }
         await sleep(RSI_POLLING_INTERVAL_MS);
     }
