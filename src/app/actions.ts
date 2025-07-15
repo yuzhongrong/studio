@@ -6,14 +6,12 @@ import { getDb } from '@/lib/mongodb';
 async function saveToMongo(data: any) {
     if (!process.env.MONGO_URI) {
         console.warn('MONGO_URI not set, skipping database save.');
-        // We will now let the caller handle UI feedback for this case
         throw new Error('MongoDB URI is not configured on the server.');
     }
     try {
         const db = await getDb();
         const collection = db.collection('pairs');
 
-        // Correctly access the 'pairs' array from the root of the data object
         if (data && data.pairs && Array.isArray(data.pairs)) {
             const operations = data.pairs.map((item: any) => {
                 // We only process items that have a pairAddress and do not have an Error field.
@@ -37,12 +35,15 @@ async function saveToMongo(data: any) {
             }
              return { success: true, message: 'No new valid data to save.' };
         } else {
-            // Throw an error if the expected data structure is not found
             throw new Error("Invalid data structure from API. Expected a 'pairs' array in the response.");
         }
     } catch (error: any) {
-        console.error('Failed to save data to MongoDB:', error);
-        // Re-throw the error to be caught by the calling function
+        // Log the detailed error for debugging, especially for network issues.
+        console.error('Failed to save data to MongoDB. Full error: ', JSON.stringify(error, null, 2));
+        // Provide a user-friendly message, hinting at network issues.
+        if (error.name === 'MongoNetworkError' || error.name === 'MongoServerSelectionError') {
+             throw new Error(`Database connection failed. Please check if the server can reach the database at ${process.env.MONGO_URI}. Details: ${error.message}`);
+        }
         throw new Error(`Database save failed: ${error.message}`);
     }
 }
@@ -67,14 +68,10 @@ export async function fetchApiData(url: string) {
          return { data: null, error: 'Failed to parse JSON response. The API might not be returning valid JSON.' };
     }
 
-    // Now we await the save operation and catch potential errors
     try {
       const dbResult = await saveToMongo(data);
-      // We return the fetched data and the success message from the DB operation.
       return { data, error: null, successMessage: dbResult.message };
     } catch (dbError: any) {
-      // If DB save fails, we still return the fetched data but include the DB error in the response.
-      // This allows the user to see the data while being notified of the DB issue.
       return { data, error: dbError.message };
     }
 
@@ -105,8 +102,6 @@ export async function getMongoData() {
         const db = await getDb();
         const collection = db.collection('pairs');
         const data = await collection.find({}).toArray();
-        // The _id field from MongoDB is not serializable for React Server Components by default.
-        // We convert it to a string.
         const serializableData = data.map(item => ({
             ...item,
             _id: item._id.toString(),
