@@ -133,9 +133,12 @@ export async function updateRsiData() {
         return { success: false, error: 'MongoDB is not configured. Please set MONGO_URI in your .env file.' };
     }
     try {
+        // Wait a moment to ensure DB connection is established
+        await sleep(1000); 
+
         const db = await getDb();
         if (!db) {
-            return { success: false, error: 'MongoDB is not configured. Please set MONGO_URI in your .env file.' };
+            return { success: false, error: 'MongoDB is not configured or connection failed.' };
         }
         const pairsCollection = db.collection('pairs');
         const rsiCollection = db.collection('rsi_data');
@@ -153,9 +156,9 @@ export async function updateRsiData() {
         for (const pair of pairs) {
             try {
                 let tokenContractAddress;
-                if (pair.baseToken?.address !== solAddress && pair.baseToken?.address !== usdcAddress) {
+                if (pair.baseToken?.address && pair.baseToken.address !== solAddress && pair.baseToken.address !== usdcAddress) {
                     tokenContractAddress = pair.baseToken.address;
-                } else if (pair.quoteToken?.address !== solAddress && pair.quoteToken?.address !== usdcAddress) {
+                } else if (pair.quoteToken?.address && pair.quoteToken.address !== solAddress && pair.quoteToken.address !== usdcAddress) {
                     tokenContractAddress = pair.quoteToken.address;
                 }
                 
@@ -179,7 +182,6 @@ export async function updateRsiData() {
 
                 // 5. Construct final object and save to rsi_data collection
                 const rsiDataToSave = {
-                    _id: tokenContractAddress, // Use token address as the unique ID
                     tokenContractAddress: tokenContractAddress,
                     'rsi-5m': rsi5m,
                     'rsi-1h': rsi1h,
@@ -189,7 +191,7 @@ export async function updateRsiData() {
                 };
 
                 await rsiCollection.updateOne(
-                    { _id: tokenContractAddress },
+                    { tokenContractAddress: tokenContractAddress },
                     { $set: rsiDataToSave },
                     { upsert: true }
                 );
@@ -200,7 +202,7 @@ export async function updateRsiData() {
 
             } catch (error: any) {
                 failedCount++;
-                console.error(`Failed to process RSI for pair ${pair.pairAddress} (Token: ${pair.baseToken?.symbol || 'N/A'}): ${error.message}`);
+                console.error(`Failed to process RSI for pair ${pair.pairAddress} (Token: ${tokenContractAddress || 'N/A'}): ${error.message}`);
                 await sleep(1000); // Wait even if failed
             }
         }
