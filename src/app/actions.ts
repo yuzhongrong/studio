@@ -2,6 +2,7 @@
 
 import { suggestFilters, SuggestFiltersInput } from '@/ai/flows/suggest-filters';
 import { getDb } from '@/lib/mongodb';
+import { fetchOkxCandlesAndCalculateRsi } from '@/lib/okx-service';
 
 async function saveToMongo(data: any) {
     if (!process.env.MONGO_URI) {
@@ -116,5 +117,59 @@ export async function getMongoData() {
     } catch (error: any) {
         console.error('Failed to fetch data from MongoDB:', error);
         return { data: null, error: `Failed to retrieve data from the database: ${error.message}` };
+    }
+}
+
+export async function updateRsiData() {
+    if (!process.env.MONGO_URI) {
+        return { success: false, error: 'MongoDB is not configured.' };
+    }
+    try {
+        const db = await getDb();
+        const pairsCollection = db.collection('pairs');
+        const rsiCollection = db.collection('rsi_data');
+        const pairs = await pairsCollection.find({}).toArray();
+
+        if (pairs.length === 0) {
+            return { success: true, successMessage: "No pairs in database to process." };
+        }
+
+        const solAddress = "So11111111111111111111111111111111111111112";
+        let updatedCount = 0;
+
+        for (const pair of pairs) {
+            let tokenContractAddress = pair.baseToken?.address;
+            if (tokenContractAddress === solAddress) {
+                tokenContractAddress = pair.quoteToken?.address;
+            }
+
+            if (!tokenContractAddress) {
+                console.warn(`Skipping pair ${pair._id} due to missing token address.`);
+                continue;
+            }
+
+            try {
+                const rsiData = await fetchOkxCandlesAndCalculateRsi(tokenContractAddress);
+                
+                if(rsiData) {
+                  await rsiCollection.updateOne(
+                      { _id: tokenContractAddress },
+                      { $set: { ...rsiData, _id: tokenContractAddress, lastUpdated: new Date() } },
+                      { upsert: true }
+                  );
+                  updatedCount++;
+                }
+
+            } catch (error: any) {
+                console.error(`Failed to process RSI for ${tokenContractAddress}: ${error.message}`);
+                // Continue to the next pair even if one fails
+            }
+        }
+
+        return { success: true, successMessage: `Successfully updated RSI for ${updatedCount} tokens.` };
+
+    } catch (error: any) {
+        console.error('Failed to update RSI data:', error);
+        return { success: false, error: `Failed to update RSI data: ${error.message}` };
     }
 }

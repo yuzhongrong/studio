@@ -1,5 +1,5 @@
 // This is a server-side only module
-import { fetchApiData } from '@/app/actions';
+import { fetchApiData, updateRsiData } from '@/app/actions';
 
 const POLLING_INTERVAL_MS = 60000; // 1 minute
 const API_ENDPOINT = "https://dexscreen-scraper-delta.vercel.app/dex?generated_text=%26filters%5BmarketCap%5D%5Bmin%5D%3D2000000%26filters%5BchainIds%5D%5B0%5D%3Dsolana";
@@ -19,14 +19,25 @@ async function poll() {
 
   while (isPolling) {
     try {
-      console.log('Polling for new data...');
+      console.log('Polling for new dexscreener data...');
       const result = await fetchApiData(API_ENDPOINT);
       if (result.error) {
-        console.error('Polling error:', result.error);
+        console.error('Dexscreener polling error:', result.error);
       }
       if (result.successMessage) {
-        console.log('Polling success:', result.successMessage);
+        console.log('Dexscreener polling success:', result.successMessage);
       }
+
+      // After fetching new pairs, update RSI data
+      console.log('Updating RSI data from OKX...');
+      const rsiResult = await updateRsiData();
+      if (rsiResult.error) {
+        console.error('RSI update error:', rsiResult.error);
+      }
+      if (rsiResult.successMessage) {
+        console.log('RSI update success:', rsiResult.successMessage);
+      }
+
     } catch (error) {
       console.error('An unexpected error occurred during polling:', error);
     }
