@@ -19,6 +19,7 @@ async function poll() {
 
   while (isPolling) {
     try {
+      // Task 1: Fetch dexscreener data
       console.log('Polling for new dexscreener data...');
       const apiResult = await fetchApiData(API_ENDPOINT);
       
@@ -27,8 +28,8 @@ async function poll() {
       } else {
         console.log('Dexscreener polling success:', apiResult.successMessage);
       }
-
-      // Trigger the RSI data update independently.
+      
+      // Task 2: Update RSI data, runs independently
       console.log('Triggering RSI data update from OKX...');
       const rsiResult = await updateRsiData();
       

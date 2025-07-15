@@ -76,13 +76,13 @@ export function calculateRSI(closePrices: number[], period: number = 14): number
 
 /**
  * Fetches candle data from OKX API for a specific token and time frame.
- * @param tokenAddress The contract address of the token.
+ * @param tokenContractAddress The contract address of the token.
  * @param bar The time frame for the candles (e.g., '5m', '1h').
  * @returns A promise that resolves to an array of candles.
  */
 export async function fetchOkxCandles(tokenAddress: string, bar: '5m' | '1h'): Promise<Candle[]> {
     const before = Date.now() - 60000000;
-    const limit = 299; 
+    const limit = 200; 
     const url = `https://web3.okx.com/api/v5/dex/market/candles?chainIndex=501&tokenContractAddress=${tokenAddress}&before=${before}&bar=${bar}&limit=${limit}`;
 
     const headers = {
