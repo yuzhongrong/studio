@@ -12,8 +12,8 @@ async function saveToMongo(data: any) {
         const db = await getDb();
         const collection = db.collection('pairs');
 
-        if (data && data.data && Array.isArray(data.data)) {
-            const operations = data.data.map((item: any) => {
+        if (data && data.pairs && Array.isArray(data.pairs)) {
+            const operations = data.pairs.map((item: any) => {
                 if (item.pairAddress) {
                     return {
                         updateOne: {
