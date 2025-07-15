@@ -24,8 +24,10 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
@@ -56,7 +58,8 @@ export default function Home() {
   const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState("filtered");
   const [dbData, setDbData] = useState<any[] | null>(null);
-
+  const [isPolling, setIsPolling] = useState(false);
+  
   const apiForm = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -68,12 +71,14 @@ export default function Home() {
     resolver: zodResolver(filterSchema),
   });
 
-  const handleFetchData = (values: z.infer<typeof formSchema>) => {
+  const performFetch = () => {
     startFetchTransition(async () => {
-      // The action now returns a potential successMessage
-      const result = await fetchApiData(values.endpoint);
+      const endpoint = apiForm.getValues("endpoint");
+      if (!endpoint) return;
+
+      const result = await fetchApiData(endpoint);
       
-      if (result.error) {
+      if (result.error && !isPolling) {
         toast({
           variant: "destructive",
           title: "Error",
@@ -81,7 +86,7 @@ export default function Home() {
         });
       }
       
-      if (result.successMessage) {
+      if (result.successMessage && !isPolling) {
         toast({
             title: "Success!",
             description: result.successMessage,
@@ -90,16 +95,36 @@ export default function Home() {
 
       if (result.data) {
         setRawData(result.data);
-        setSuggestedFilters([]);
-        setActiveFilters(new Set());
-        filterForm.reset();
-        // Invalidate DB data so it can be refetched on next tab click
-        setDbData(null);
-      } else {
+        if (!isPolling) {
+          setSuggestedFilters([]);
+          setActiveFilters(new Set());
+          filterForm.reset();
+        }
+        setDbData(null); // Invalidate DB data for refetch
+      } else if (!isPolling) {
         setRawData(null);
       }
     });
   };
+
+  const handleFetchData = (values: z.infer<typeof formSchema>) => {
+    performFetch();
+  };
+
+  useEffect(() => {
+    let intervalId: NodeJS.Timeout | null = null;
+    if (isPolling) {
+      intervalId = setInterval(() => {
+        performFetch();
+      }, 5000);
+    }
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isPolling]);
 
   const handleSuggestFilters = (values: z.infer<typeof filterSchema>) => {
     if (!rawData) {
@@ -156,8 +181,7 @@ export default function Home() {
       return;
     }
     
-    // The API returns data in a `data` property
-    let dataToFilter = rawData.data && Array.isArray(rawData.data) ? [...rawData.data] : (Array.isArray(rawData) ? [...rawData] : [rawData]);
+    let dataToFilter = rawData.data && Array.isArray(rawData.data) ? [...rawData.data] : [];
     
     if (activeFilters.size === 0) {
       setFilteredData(dataToFilter);
@@ -166,8 +190,6 @@ export default function Home() {
 
     try {
       const appliedFilterFns = Array.from(activeFilters).map((filter) => {
-        // This is a potential security risk in a real app, but acceptable for this tool.
-        // It allows for dynamic filtering based on AI suggestions.
         return new Function('item', `try { return ${filter}; } catch (e) { return false; }`);
       });
 
@@ -241,14 +263,25 @@ export default function Home() {
                       </FormItem>
                     )}
                   />
-                  <Button type="submit" disabled={isFetchPending}>
-                    {isFetchPending ? (
-                      <Loader2 className="animate-spin" />
-                    ) : (
-                      <Search />
-                    )}
-                    <span>Fetch Data</span>
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button type="submit" disabled={isFetchPending}>
+                      {isFetchPending ? (
+                        <Loader2 className="animate-spin" />
+                      ) : (
+                        <Search />
+                      )}
+                      <span>Fetch Data</span>
+                    </Button>
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="polling-switch"
+                        checked={isPolling}
+                        onCheckedChange={setIsPolling}
+                        disabled={isFetchPending}
+                      />
+                      <Label htmlFor="polling-switch">Auto-refresh</Label>
+                    </div>
+                  </div>
                 </form>
               </Form>
             </CardContent>
