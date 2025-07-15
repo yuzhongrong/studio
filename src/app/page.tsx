@@ -35,7 +35,7 @@ const formSchema = z.object({
   endpoint: z
     .string()
     .url({ message: "Please enter a valid URL." })
-    .default("https://api.dexscreener.com/latest/dex/pairs/solana/8ujpQXxnnWvRohU2oCe3eaSzoL7paU2uj3fEn4Zp72US,6miPsFV3THUFh1r25JYUHdZsM6q9xGqZ5Artificial,h61rDwxnG9woyxsVQP7zuA6kLFpb3NvnRQeoiSdVpump"),
+    .default("https://dexscreen-scraper-delta.vercel.app/dex?generated_text=%26filters%5BmarketCap%5D%5Bmin%5D%3D2000000%26filters%5BchainIds%5D%5B0%5D%3Dsolana"),
 });
 
 const filterSchema = z.object({
@@ -60,7 +60,7 @@ export default function Home() {
   const apiForm = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      endpoint: "https://api.dexscreener.com/latest/dex/pairs/solana/8ujpQXxnnWvRohU2oCe3eaSzoL7paU2uj3fEn4Zp72US,6miPsFV3THUFh1r25JYUHdZsM6q9xGqZ5Artificial,h61rDwxnG9woyxsVQP7zuA6kLFpb3NvnRQeoiSdVpump",
+      endpoint: "https://dexscreen-scraper-delta.vercel.app/dex?generated_text=%26filters%5BmarketCap%5D%5Bmin%5D%3D2000000%26filters%5BchainIds%5D%5B0%5D%3Dsolana",
     },
   });
 
