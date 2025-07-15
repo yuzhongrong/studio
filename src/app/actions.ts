@@ -4,6 +4,10 @@ import { suggestFilters, SuggestFiltersInput } from '@/ai/flows/suggest-filters'
 import { getDb } from '@/lib/mongodb';
 import { fetchOkxCandlesAndCalculateRsi } from '@/lib/okx-service';
 
+function sleep(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 async function saveToMongo(data: any) {
     if (!process.env.MONGO_URI) {
         console.warn('MONGO_URI not set, skipping database save.');
@@ -159,6 +163,9 @@ export async function updateRsiData() {
                   );
                   updatedCount++;
                 }
+                
+                // Wait for 1 second before the next iteration
+                await sleep(1000);
 
             } catch (error: any) {
                 console.error(`Failed to process RSI for ${tokenContractAddress}: ${error.message}`);
