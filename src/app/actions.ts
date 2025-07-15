@@ -133,7 +133,6 @@ export async function updateRsiData() {
         return { success: false, error: 'MongoDB is not configured. Please set MONGO_URI in your .env file.' };
     }
     try {
-        // Wait a moment to ensure DB connection is established
         await sleep(1000); 
 
         const db = await getDb();
@@ -149,38 +148,28 @@ export async function updateRsiData() {
         }
 
         const solAddress = "So11111111111111111111111111111111111111112";
-        const usdcAddress = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
         let updatedCount = 0;
         let failedCount = 0;
 
         for (const pair of pairs) {
             try {
-                let tokenContractAddress;
-                if (pair.baseToken?.address && pair.baseToken.address !== solAddress && pair.baseToken.address !== usdcAddress) {
-                    tokenContractAddress = pair.baseToken.address;
-                } else if (pair.quoteToken?.address && pair.quoteToken.address !== solAddress && pair.quoteToken.address !== usdcAddress) {
-                    tokenContractAddress = pair.quoteToken.address;
+                let tokenContractAddress = pair.baseToken?.address;
+                if (tokenContractAddress === solAddress) {
+                    tokenContractAddress = pair.quoteToken?.address;
                 }
                 
                 if (!tokenContractAddress) {
-                    console.warn(`Skipping pair ${pair.pairAddress} because a valid, non-SOL/USDC token address could not be found.`);
+                    console.warn(`Skipping pair ${pair.pairAddress} because a valid token address could not be found.`);
                     continue;
                 }
 
-                // 1. Fetch 5m candles
                 const candles5m = await fetchOkxCandles(tokenContractAddress, '5m');
-                
-                // 2. Wait 1 second
                 await sleep(1000);
-
-                // 3. Fetch 1h candles
                 const candles1h = await fetchOkxCandles(tokenContractAddress, '1h');
                 
-                // 4. Calculate RSIs
                 const rsi5m = calculateRSI(candles5m.map(c => c.close));
                 const rsi1h = calculateRSI(candles1h.map(c => c.close));
 
-                // 5. Construct final object and save to rsi_data collection
                 const rsiDataToSave = {
                     tokenContractAddress: tokenContractAddress,
                     'rsi-5m': rsi5m,
@@ -197,13 +186,12 @@ export async function updateRsiData() {
                 );
                 updatedCount++;
                 
-                // 6. Wait 1 second before next pair
                 await sleep(1000);
 
             } catch (error: any) {
                 failedCount++;
                 console.error(`Failed to process RSI for pair ${pair.pairAddress}: ${error.message}`);
-                await sleep(1000); // Wait even if failed
+                await sleep(1000);
             }
         }
 
