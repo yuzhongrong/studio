@@ -70,25 +70,33 @@ export default function Home() {
 
   const handleFetchData = (values: z.infer<typeof formSchema>) => {
     startFetchTransition(async () => {
+      // The action now returns a potential successMessage
       const result = await fetchApiData(values.endpoint);
+      
       if (result.error) {
         toast({
           variant: "destructive",
-          title: "Error fetching data",
+          title: "Error",
           description: result.error,
         });
-        setRawData(null);
-      } else {
+      }
+      
+      if (result.successMessage) {
+        toast({
+            title: "Success!",
+            description: result.successMessage,
+        });
+      }
+
+      if (result.data) {
         setRawData(result.data);
         setSuggestedFilters([]);
         setActiveFilters(new Set());
         filterForm.reset();
-        toast({
-          title: "Success!",
-          description: "API data fetched and saved to DB.",
-        });
-        // Invalidate DB data so it can be refetched
+        // Invalidate DB data so it can be refetched on next tab click
         setDbData(null);
+      } else {
+        setRawData(null);
       }
     });
   };
