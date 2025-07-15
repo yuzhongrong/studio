@@ -126,7 +126,8 @@ export async function fetchOkxCandlesAndCalculateRsi(tokenAddress: string) {
         return {
             tokenContractAddress: tokenAddress,
             'rsi-5m': rsi5m,
-            'rsi-1h': rsi1h
+            'rsi-1h': rsi1h,
+            'rsd_200_5m': candles5m
         };
 
     } catch (error: any) {
