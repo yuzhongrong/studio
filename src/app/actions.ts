@@ -163,7 +163,7 @@ export async function updateRsiData() {
                 }
                 
                 if (!tokenContractAddress) {
-                    console.warn(`Skipping pair ${pair.pairAddress} due to missing or invalid token address.`);
+                    console.warn(`Skipping pair ${pair.pairAddress} because a valid, non-SOL/USDC token address could not be found.`);
                     continue;
                 }
 
@@ -202,7 +202,7 @@ export async function updateRsiData() {
 
             } catch (error: any) {
                 failedCount++;
-                console.error(`Failed to process RSI for pair ${pair.pairAddress} (Token: ${tokenContractAddress || 'N/A'}): ${error.message}`);
+                console.error(`Failed to process RSI for pair ${pair.pairAddress}: ${error.message}`);
                 await sleep(1000); // Wait even if failed
             }
         }
