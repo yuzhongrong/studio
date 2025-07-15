@@ -17,6 +17,20 @@ async function poll() {
   isPolling = true;
   console.log('Background polling service started.');
 
+  // Run Task 2 immediately on startup
+  try {
+    console.log('Triggering initial RSI data update from OKX on startup...');
+    const rsiResult = await updateRsiData();
+    if (rsiResult.error) {
+      console.error('Initial RSI update process finished with an error:', rsiResult.error);
+    } else {
+      console.log('Initial RSI update process finished successfully.', rsiResult.message);
+    }
+  } catch(error) {
+      console.error('An unexpected error occurred during the initial RSI update:', error);
+  }
+
+
   while (isPolling) {
     try {
       // Task 1: Fetch dexscreener data
