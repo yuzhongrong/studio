@@ -40,9 +40,7 @@ const prompt = ai.definePrompt({
   Your task is to generate an array of filter expressions that can be applied to the JSON data to retrieve the relevant information.
 
   Here's the raw JSON data:
-  \`\`\`json
   {{{rawJson}}}
-  \`\`\`
 
   Here's the description of the data the user is seeking:
   {{{dataDescription}}}
