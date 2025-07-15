@@ -68,7 +68,7 @@ function calculateRSI(closePrices: number[], period: number = 14): number | null
 }
 
 
-async function fetchOkxCandles(tokenAddress: string, bar: '5m' | '1H'): Promise<Candle[]> {
+async function fetchOkxCandles(tokenAddress: string, bar: '5m'): Promise<Candle[]> {
     const before = Date.now() - 60 * 1000 * 1000; // 60,000,000ms ago
     const limit = 200;
     const url = `https://web3.okx.com/api/v5/dex/market/candles?chainIndex=501&tokenContractAddress=${tokenAddress}&before=${before}&bar=${bar}&limit=${limit}`;
@@ -112,21 +112,15 @@ async function fetchOkxCandles(tokenAddress: string, bar: '5m' | '1H'): Promise<
 
 export async function fetchOkxCandlesAndCalculateRsi(tokenAddress: string) {
     try {
-        const [candles5m, candles1h] = await Promise.all([
-            fetchOkxCandles(tokenAddress, '5m'),
-            fetchOkxCandles(tokenAddress, '1H')
-        ]);
+        const candles5m = await fetchOkxCandles(tokenAddress, '5m');
         
         const closePrices5m = candles5m.map(c => c.close);
-        const closePrices1h = candles1h.map(c => c.close);
-
         const rsi5m = calculateRSI(closePrices5m);
-        const rsi1h = calculateRSI(closePrices1h);
 
         return {
             tokenContractAddress: tokenAddress,
             'rsi-5m': rsi5m,
-            'rsi-1h': rsi1h,
+            'rsi-1h': null, // No longer fetching 1h data
             'rsd_200_5m': candles5m
         };
 
