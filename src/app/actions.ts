@@ -16,10 +16,14 @@ async function saveToMongo(data: any) {
     try {
         const db = await getDb();
         const collection = db.collection('pairs');
+        const solAddress = "So11111111111111111111111111111111111111112";
 
         if (data && data.data && Array.isArray(data.data)) {
             const operations = data.data.map((item: any) => {
-                if (item.pairAddress && !item.Error) {
+                if (item.pairAddress && !item.Error && item.baseToken && item.quoteToken &&
+                    item.baseToken.address !== solAddress &&
+                    item.quoteToken.address === solAddress
+                ) {
                     // Use replaceOne with upsert to either insert a new document 
                     // or completely replace an existing one.
                     return {
