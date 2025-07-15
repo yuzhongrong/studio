@@ -156,8 +156,8 @@ export default function Home() {
       return;
     }
     
-    // The API might return the data in a `pairs` property
-    let dataToFilter = rawData.pairs && Array.isArray(rawData.pairs) ? [...rawData.pairs] : (Array.isArray(rawData) ? [...rawData] : [rawData]);
+    // The API returns data in a `data` property
+    let dataToFilter = rawData.data && Array.isArray(rawData.data) ? [...rawData.data] : (Array.isArray(rawData) ? [...rawData] : [rawData]);
     
     if (activeFilters.size === 0) {
       setFilteredData(dataToFilter);

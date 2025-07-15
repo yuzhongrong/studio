@@ -12,8 +12,8 @@ async function saveToMongo(data: any) {
         const db = await getDb();
         const collection = db.collection('pairs');
 
-        if (data && data.pairs && Array.isArray(data.pairs)) {
-            const operations = data.pairs.map((item: any) => {
+        if (data && data.data && Array.isArray(data.data)) {
+            const operations = data.data.map((item: any) => {
                 // We only process items that have a pairAddress and do not have an Error field.
                 if (item.pairAddress && !item.Error) {
                     return {
@@ -36,7 +36,7 @@ async function saveToMongo(data: any) {
              return { success: true, message: 'No new valid data to save.' };
         } else {
             // Throw an error if the expected structure is not found.
-            throw new Error("Invalid data structure from API. Expected a 'pairs' array in the response.");
+            throw new Error("Invalid data structure from API. Expected a 'data' array in the response.");
         }
     } catch (error: any) {
         // Log the detailed error for debugging, especially for network issues.
