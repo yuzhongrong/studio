@@ -29,18 +29,15 @@ export function calculateRSI(closePrices: number[], period: number = 14): number
     return null; // Not enough data
   }
 
+  // Use a non-destructive reverse by creating a copy with the spread operator first.
+  const prices = [...closePrices].reverse();
+
   let gains = 0;
   let losses = 0;
-  
-  // Calculate changes
-  const priceChanges = [];
-  for (let i = 1; i < closePrices.length; i++) {
-    priceChanges.push(closePrices[i] - closePrices[i - 1]);
-  }
 
-  // Initial Averages
-  for (let i = 0; i < period; i++) {
-    const change = priceChanges[i];
+  // Calculate changes from oldest to newest
+  for (let i = 1; i <= period; i++) {
+    const change = prices[i] - prices[i-1];
     if (change > 0) {
       gains += change;
     } else {
@@ -51,16 +48,15 @@ export function calculateRSI(closePrices: number[], period: number = 14): number
   let avgGain = gains / period;
   let avgLoss = losses / period;
 
-  // Smoothed Averages for subsequent values
-  for (let i = period; i < priceChanges.length; i++) {
-    const change = priceChanges[i];
-    if (change > 0) {
-      avgGain = (avgGain * (period - 1) + change) / period;
-      avgLoss = (avgLoss * (period - 1)) / period;
-    } else {
-      avgLoss = (avgLoss * (period - 1) - change) / period;
-      avgGain = (avgGain * (period - 1)) / period;
-    }
+  for (let i = period + 1; i < prices.length; i++) {
+      const change = prices[i] - prices[i-1];
+      if (change > 0) {
+          avgGain = (avgGain * (period - 1) + change) / period;
+          avgLoss = (avgLoss * (period - 1)) / period;
+      } else {
+          avgLoss = (avgLoss * (period - 1) - change) / period;
+          avgGain = (avgGain * (period - 1)) / period;
+      }
   }
   
   if (avgLoss === 0) {
@@ -106,11 +102,9 @@ export async function fetchOkxCandles(tokenAddress: string, bar: '5m' | '1H'): P
     if (!jsonResponse.data || !Array.isArray(jsonResponse.data)) {
         return [];
     }
-
-    // The data is returned with the most recent candle first, we need to reverse it for RSI calculation
-    const reversedData = [...jsonResponse.data].reverse();
-
-    return reversedData.map((d: string[]) => ({
+    
+    // The data is returned with the most recent candle first.
+    return jsonResponse.data.map((d: string[]) => ({
         timestamp: parseInt(d[0], 10),
         open: parseFloat(d[1]),
         high: parseFloat(d[2]),
