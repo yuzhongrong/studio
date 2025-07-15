@@ -165,7 +165,7 @@ export async function updateRsiData() {
 
                 const candles5m = await fetchOkxCandles(tokenContractAddress, '5m');
                 await sleep(1000);
-                const candles1h = await fetchOkxCandles(tokenContractAddress, '1h');
+                const candles1h = await fetchOkxCandles(tokenContractAddress, '1H');
                 
                 const rsi5m = calculateRSI(candles5m.map(c => c.close));
                 const rsi1h = calculateRSI(candles1h.map(c => c.close));
