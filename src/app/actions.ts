@@ -20,12 +20,12 @@ async function saveToMongo(data: any) {
         if (data && data.data && Array.isArray(data.data)) {
             const operations = data.data.map((item: any) => {
                 if (item.pairAddress && !item.Error) {
-                    // Use $setOnInsert to only write data when a new document is created.
-                    // This prevents overwriting existing documents.
+                    // Use replaceOne with upsert to either insert a new document 
+                    // or completely replace an existing one.
                     return {
-                        updateOne: {
+                        replaceOne: {
                             filter: { _id: item.pairAddress },
-                            update: { $setOnInsert: { ...item, _id: item.pairAddress } },
+                            replacement: { ...item, _id: item.pairAddress },
                             upsert: true,
                         },
                     };
@@ -35,11 +35,8 @@ async function saveToMongo(data: any) {
 
             if (operations.length > 0) {
                 const result = await collection.bulkWrite(operations);
-                // We only care about upsertedCount because we no longer modify existing docs.
-                const count = result.upsertedCount;
-                const message = count > 0 
-                    ? `${count} new documents saved to the database.`
-                    : 'No new documents to add.';
+                const { upsertedCount, modifiedCount } = result;
+                const message = `${upsertedCount} new documents added, ${modifiedCount} documents updated.`;
                 console.log(message);
                 return { success: true, message: message };
             }
