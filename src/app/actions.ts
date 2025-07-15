@@ -166,7 +166,6 @@ export async function updateRsiData() {
                     _id: tokenContractAddress,
                     'rsi-5m': rsi5m,
                     'rsi-1h': rsi1h,
-                    'rsd_200_5m': candles5m,
                     lastUpdated: new Date()
                 };
 
