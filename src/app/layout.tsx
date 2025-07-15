@@ -1,11 +1,15 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
+import { startPolling } from '@/lib/polling-service';
 
 export const metadata: Metadata = {
   title: 'API Navigator',
   description: 'Visually navigate and filter API data with AI-powered suggestions.',
 };
+
+// Start the background polling service
+startPolling();
 
 export default function RootLayout({
   children,

@@ -24,10 +24,8 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
@@ -58,7 +56,6 @@ export default function Home() {
   const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState("filtered");
   const [dbData, setDbData] = useState<any[] | null>(null);
-  const [isPolling, setIsPolling] = useState(false);
   
   const apiForm = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -71,14 +68,11 @@ export default function Home() {
     resolver: zodResolver(filterSchema),
   });
 
-  const performFetch = () => {
+  const performFetch = (endpoint: string) => {
     startFetchTransition(async () => {
-      const endpoint = apiForm.getValues("endpoint");
-      if (!endpoint) return;
-
       const result = await fetchApiData(endpoint);
       
-      if (result.error && !isPolling) {
+      if (result.error) {
         toast({
           variant: "destructive",
           title: "Error",
@@ -86,7 +80,7 @@ export default function Home() {
         });
       }
       
-      if (result.successMessage && !isPolling) {
+      if (result.successMessage) {
         toast({
             title: "Success!",
             description: result.successMessage,
@@ -95,37 +89,20 @@ export default function Home() {
 
       if (result.data) {
         setRawData(result.data);
-        if (!isPolling) {
-          setSuggestedFilters([]);
-          setActiveFilters(new Set());
-          filterForm.reset();
-        }
+        setSuggestedFilters([]);
+        setActiveFilters(new Set());
+        filterForm.reset();
         setDbData(null); // Invalidate DB data for refetch
-      } else if (!isPolling) {
+      } else {
         setRawData(null);
       }
     });
   };
 
   const handleFetchData = (values: z.infer<typeof formSchema>) => {
-    performFetch();
+    performFetch(values.endpoint);
   };
-
-  useEffect(() => {
-    let intervalId: NodeJS.Timeout | null = null;
-    if (isPolling) {
-      intervalId = setInterval(() => {
-        performFetch();
-      }, 15000);
-    }
-    return () => {
-      if (intervalId) {
-        clearInterval(intervalId);
-      }
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isPolling]);
-
+  
   const handleSuggestFilters = (values: z.infer<typeof filterSchema>) => {
     if (!rawData) {
       toast({
@@ -207,23 +184,38 @@ export default function Home() {
     }
   }, [rawData, activeFilters, toast]);
 
+  const fetchMongoData = () => {
+    startDbFetchTransition(async () => {
+      const result = await getMongoData();
+      if (result.error) {
+        toast({
+          variant: "destructive",
+          title: "Database Error",
+          description: result.error,
+        });
+        setDbData([]);
+      } else {
+        setDbData(result.data);
+      }
+    });
+  }
+
   useEffect(() => {
     if (activeTab === 'database' && !dbData) {
-      startDbFetchTransition(async () => {
-        const result = await getMongoData();
-        if (result.error) {
-          toast({
-            variant: "destructive",
-            title: "Database Error",
-            description: result.error,
-          });
-          setDbData([]);
-        } else {
-          setDbData(result.data);
-        }
-      });
+      fetchMongoData();
     }
-  }, [activeTab, dbData, toast]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if(activeTab === 'database') {
+        fetchMongoData();
+      }
+    }, 15000);
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-[#F4F2F9]">
@@ -239,7 +231,7 @@ export default function Home() {
             <CardHeader>
               <CardTitle>API Endpoint</CardTitle>
               <CardDescription>
-                Enter an API endpoint to fetch data from. Try the default or your own.
+                Enter an API endpoint to fetch data from. The data will be automatically saved to the database every 15 seconds.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -263,43 +255,31 @@ export default function Home() {
                       </FormItem>
                     )}
                   />
-                  <div className="flex items-center gap-2">
-                    <Button type="submit" disabled={isFetchPending}>
-                      {isFetchPending ? (
-                        <Loader2 className="animate-spin" />
-                      ) : (
-                        <Search />
-                      )}
-                      <span>Fetch Data</span>
-                    </Button>
-                    <div className="flex items-center space-x-2">
-                      <Switch
-                        id="polling-switch"
-                        checked={isPolling}
-                        onCheckedChange={setIsPolling}
-                        disabled={isFetchPending}
-                      />
-                      <Label htmlFor="polling-switch">Auto-refresh</Label>
-                    </div>
-                  </div>
+                  <Button type="submit" disabled={isFetchPending}>
+                    {isFetchPending ? (
+                      <Loader2 className="animate-spin" />
+                    ) : (
+                      <Search />
+                    )}
+                    <span>Fetch Manually</span>
+                  </Button>
                 </form>
               </Form>
             </CardContent>
           </Card>
 
-          {rawData && (
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="filtered">Filtered Data</TabsTrigger>
-                <TabsTrigger value="raw">Raw JSON</TabsTrigger>
-                <TabsTrigger value="database">Database</TabsTrigger>
-              </TabsList>
-              <TabsContent value="filtered" className="mt-4">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="filtered">Filtered Data</TabsTrigger>
+              <TabsTrigger value="raw">Raw JSON</TabsTrigger>
+              <TabsTrigger value="database">Database</TabsTrigger>
+            </TabsList>
+            <TabsContent value="filtered" className="mt-4">
                 <Card>
                   <CardHeader>
                     <CardTitle>Intelligent Filtering</CardTitle>
                     <CardDescription>
-                      Describe the data you're looking for, and we'll suggest filters.
+                      Describe the data you're looking for, and we'll suggest filters. This data is from the last manual fetch.
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
@@ -321,7 +301,7 @@ export default function Home() {
                             </FormItem>
                           )}
                         />
-                        <Button type="submit" disabled={isSuggestPending} className="bg-accent text-accent-foreground hover:bg-accent/90">
+                        <Button type="submit" disabled={isSuggestPending || !rawData} className="bg-accent text-accent-foreground hover:bg-accent/90">
                           {isSuggestPending ? (
                             <Loader2 className="animate-spin" />
                           ) : (
@@ -378,69 +358,75 @@ export default function Home() {
                        ) : (
                           <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/50 p-12 text-center">
                             <p className="text-muted-foreground">No results found.</p>
-                            <p className="text-sm text-muted-foreground/80">Try adjusting your filters or fetching new data.</p>
+                            <p className="text-sm text-muted-foreground/80">Try fetching some data manually to see filtered results here.</p>
                           </div>
                        )}
                     </div>
                   </CardContent>
                 </Card>
               </TabsContent>
-              <TabsContent value="raw" className="mt-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Raw JSON Response</CardTitle>
-                    <CardDescription>
-                      This is the complete, unfiltered data from the API.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
+            <TabsContent value="raw" className="mt-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Raw JSON Response</CardTitle>
+                  <CardDescription>
+                    This is the complete, unfiltered data from the last manual fetch.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {rawData ? (
                     <ScrollArea className="h-[600px] w-full rounded-md border bg-muted/30 p-4">
                       <pre className="font-code text-sm">
                         {JSON.stringify(rawData, null, 2)}
                       </pre>
                     </ScrollArea>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-              <TabsContent value="database" className="mt-4">
-                 <Card>
-                   <CardHeader>
-                     <CardTitle className="flex items-center gap-2">
-                       <Database />
-                       Data from MongoDB
-                     </CardTitle>
-                     <CardDescription>
-                       This is the data currently stored in your 'pairs' collection.
-                     </CardDescription>
-                   </CardHeader>
-                   <CardContent>
-                     {isDbFetchPending ? (
-                       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                         {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-72 w-full" />)}
-                       </div>
-                     ) : dbData && dbData.length > 0 ? (
-                       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                         {dbData.map((item, index) => (
-                           <Card key={item._id || index} className="overflow-hidden">
-                             <ScrollArea className="h-72">
-                               <pre className="p-4 font-code text-xs">
-                                 {JSON.stringify(item, null, 2)}
-                               </pre>
-                             </ScrollArea>
-                           </Card>
-                         ))}
-                       </div>
-                     ) : (
-                       <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/50 p-12 text-center">
-                         <p className="text-muted-foreground">No data in database.</p>
-                         <p className="text-sm text-muted-foreground/80">Fetch some API data to populate the database.</p>
-                       </div>
-                     )}
-                   </CardContent>
-                 </Card>
-               </TabsContent>
-            </Tabs>
-          )}
+                  ) : (
+                    <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/50 p-12 text-center">
+                      <p className="text-muted-foreground">No raw data to display.</p>
+                      <p className="text-sm text-muted-foreground/80">Fetch some data manually to see the raw response here.</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+            <TabsContent value="database" className="mt-4">
+               <Card>
+                 <CardHeader>
+                   <CardTitle className="flex items-center gap-2">
+                     <Database />
+                     Data from MongoDB
+                   </CardTitle>
+                   <CardDescription>
+                     This is the data currently stored in your 'pairs' collection. It automatically refreshes.
+                   </CardDescription>
+                 </CardHeader>
+                 <CardContent>
+                   {isDbFetchPending ? (
+                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                       {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-72 w-full" />)}
+                     </div>
+                   ) : dbData && dbData.length > 0 ? (
+                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                       {dbData.map((item, index) => (
+                         <Card key={item._id || index} className="overflow-hidden">
+                           <ScrollArea className="h-72">
+                             <pre className="p-4 font-code text-xs">
+                               {JSON.stringify(item, null, 2)}
+                             </pre>
+                           </ScrollArea>
+                         </Card>
+                       ))}
+                     </div>
+                   ) : (
+                     <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/50 p-12 text-center">
+                       <p className="text-muted-foreground">No data in database.</p>
+                       <p className="text-sm text-muted-foreground/80">The background task is running. Data should appear here shortly.</p>
+                     </div>
+                   )}
+                 </CardContent>
+               </Card>
+             </TabsContent>
+          </Tabs>
         </div>
       </main>
     </div>
