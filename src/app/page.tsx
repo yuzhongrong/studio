@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Database, Loader2, Search, Ship, Wand2 } from "lucide-react";
+import { Database, Loader2, Search, Ship, Wand2, Copy } from "lucide-react";
 import React, { useEffect, useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -39,6 +39,12 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const formSchema = z.object({
   endpoint: z
@@ -238,6 +244,15 @@ export default function Home() {
     if (marketCap >= 1_000) return `${(marketCap / 1_000).toFixed(2)}K`;
     return marketCap.toFixed(2);
   };
+  
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      toast({
+        title: "Copied!",
+        description: "Contract address copied to clipboard.",
+      });
+    });
+  };
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-[#F4F2F9]">
@@ -431,11 +446,13 @@ export default function Home() {
                         <Skeleton className="h-10 w-full" />
                      </div>
                    ) : rsiData && rsiData.length > 0 ? (
-                    <ScrollArea className="h-[600px] w-full">
+                    <TooltipProvider>
+                      <ScrollArea className="h-[600px] w-full">
                         <Table>
                             <TableHeader className="sticky top-0 bg-background">
                                 <TableRow>
                                     <TableHead>Symbol</TableHead>
+                                    <TableHead>Contract</TableHead>
                                     <TableHead className="text-right">RSI (1H)</TableHead>
                                     <TableHead className="text-right">RSI (5m)</TableHead>
                                     <TableHead className="text-right">Price Change (24h)</TableHead>
@@ -447,6 +464,23 @@ export default function Home() {
                                 {rsiData.map((item) => (
                                     <TableRow key={item._id}>
                                         <TableCell className="font-medium">{item.symbol || 'N/A'}</TableCell>
+                                        <TableCell>
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-mono text-xs">
+                                                    {item.tokenContractAddress.substring(0, 4)}...{item.tokenContractAddress.substring(item.tokenContractAddress.length - 4)}
+                                                </span>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => copyToClipboard(item.tokenContractAddress)}>
+                                                            <Copy className="h-3 w-3" />
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        <p>Copy address</p>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </div>
+                                        </TableCell>
                                         <TableCell className={`text-right font-semibold ${item['rsi-1h'] > 70 ? 'text-destructive' : item['rsi-1h'] < 30 ? 'text-green-600' : ''}`}>
                                             {item['rsi-1h'] ? item['rsi-1h'].toFixed(2) : 'N/A'}
                                         </TableCell>
@@ -464,7 +498,8 @@ export default function Home() {
                                 ))}
                             </TableBody>
                         </Table>
-                     </ScrollArea>
+                      </ScrollArea>
+                    </TooltipProvider>
                    ) : (
                      <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/50 p-12 text-center">
                        <p className="text-muted-foreground">No data in database.</p>
@@ -480,5 +515,3 @@ export default function Home() {
     </div>
   );
 }
-
-    
