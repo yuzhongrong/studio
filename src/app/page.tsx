@@ -5,6 +5,7 @@ import { Database, Loader2, Search, Ship, Wand2 } from "lucide-react";
 import React, { useEffect, useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { format } from 'date-fns';
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -29,7 +30,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { fetchApiData, getFilterSuggestions, getMongoData } from "./actions";
+import { fetchApiData, getFilterSuggestions } from "./actions";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table"
 
 const formSchema = z.object({
   endpoint: z
@@ -55,7 +64,7 @@ export default function Home() {
   const [suggestedFilters, setSuggestedFilters] = useState<string[]>([]);
   const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState("filtered");
-  const [dbData, setDbData] = useState<any[] | null>(null);
+  const [rsiData, setRsiData] = useState<any[] | null>(null);
   
   const apiForm = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -92,7 +101,7 @@ export default function Home() {
         setSuggestedFilters([]);
         setActiveFilters(new Set());
         filterForm.reset();
-        setDbData(null); // Invalidate DB data for refetch
+        setRsiData(null); // Invalidate DB data for refetch
       } else {
         setRawData(null);
       }
@@ -184,25 +193,30 @@ export default function Home() {
     }
   }, [rawData, activeFilters, toast]);
 
-  const fetchMongoData = () => {
+  const fetchRsiData = () => {
     startDbFetchTransition(async () => {
-      const result = await getMongoData();
-      if (result.error) {
-        toast({
-          variant: "destructive",
-          title: "Database Error",
-          description: result.error,
-        });
-        setDbData([]);
-      } else {
-        setDbData(result.data);
-      }
+        try {
+            const response = await fetch('/api/rsi');
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to fetch RSI data');
+            }
+            const data = await response.json();
+            setRsiData(data);
+        } catch(error: any) {
+            toast({
+              variant: "destructive",
+              title: "Database Error",
+              description: error.message,
+            });
+            setRsiData([]);
+        }
     });
   }
 
   useEffect(() => {
-    if (activeTab === 'database' && !dbData) {
-      fetchMongoData();
+    if (activeTab === 'database' && !rsiData) {
+      fetchRsiData();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
@@ -210,12 +224,20 @@ export default function Home() {
   useEffect(() => {
     const interval = setInterval(() => {
       if(activeTab === 'database') {
-        fetchMongoData();
+        fetchRsiData();
       }
     }, 15000);
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
+
+  const formatMarketCap = (marketCap: number) => {
+    if (!marketCap) return 'N/A';
+    if (marketCap >= 1_000_000_000) return `${(marketCap / 1_000_000_000).toFixed(2)}B`;
+    if (marketCap >= 1_000_000) return `${(marketCap / 1_000_000).toFixed(2)}M`;
+    if (marketCap >= 1_000) return `${(marketCap / 1_000).toFixed(2)}K`;
+    return marketCap.toFixed(2);
+  };
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-[#F4F2F9]">
@@ -272,7 +294,7 @@ export default function Home() {
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="filtered">Filtered Data</TabsTrigger>
               <TabsTrigger value="raw">Raw JSON</TabsTrigger>
-              <TabsTrigger value="database">Database</TabsTrigger>
+              <TabsTrigger value="database">RSI Database</TabsTrigger>
             </TabsList>
             <TabsContent value="filtered" className="mt-4">
                 <Card>
@@ -394,29 +416,55 @@ export default function Home() {
                  <CardHeader>
                    <CardTitle className="flex items-center gap-2">
                      <Database />
-                     Data from MongoDB
+                     RSI Data from MongoDB
                    </CardTitle>
                    <CardDescription>
-                     This is the data currently stored in your 'pairs' collection. It automatically refreshes.
+                     This is the data currently stored in your 'rsi_data' collection. It automatically refreshes.
                    </CardDescription>
                  </CardHeader>
                  <CardContent>
                    {isDbFetchPending ? (
-                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                       {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-72 w-full" />)}
+                     <div className="space-y-2">
+                        <Skeleton className="h-10 w-full" />
+                        <Skeleton className="h-10 w-full" />
+                        <Skeleton className="h-10 w-full" />
+                        <Skeleton className="h-10 w-full" />
                      </div>
-                   ) : dbData && dbData.length > 0 ? (
-                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                       {dbData.map((item, index) => (
-                         <Card key={item._id || index} className="overflow-hidden">
-                           <ScrollArea className="h-72">
-                             <pre className="p-4 font-code text-xs">
-                               {JSON.stringify(item, null, 2)}
-                             </pre>
-                           </ScrollArea>
-                         </Card>
-                       ))}
-                     </div>
+                   ) : rsiData && rsiData.length > 0 ? (
+                    <ScrollArea className="h-[600px] w-full">
+                        <Table>
+                            <TableHeader className="sticky top-0 bg-background">
+                                <TableRow>
+                                    <TableHead>Symbol</TableHead>
+                                    <TableHead className="text-right">RSI (1H)</TableHead>
+                                    <TableHead className="text-right">RSI (5m)</TableHead>
+                                    <TableHead className="text-right">Price Change (24h)</TableHead>
+                                    <TableHead className="text-right">Market Cap</TableHead>
+                                    <TableHead className="text-right">Last Updated</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {rsiData.map((item) => (
+                                    <TableRow key={item._id}>
+                                        <TableCell className="font-medium">{item.symbol || 'N/A'}</TableCell>
+                                        <TableCell className={`text-right font-semibold ${item['rsi-1h'] > 70 ? 'text-destructive' : item['rsi-1h'] < 30 ? 'text-green-600' : ''}`}>
+                                            {item['rsi-1h'] ? item['rsi-1h'].toFixed(2) : 'N/A'}
+                                        </TableCell>
+                                        <TableCell className={`text-right font-semibold ${item['rsi-5m'] > 70 ? 'text-destructive' : item['rsi-5m'] < 30 ? 'text-green-600' : ''}`}>
+                                            {item['rsi-5m'] ? item['rsi-5m'].toFixed(2) : 'N/A'}
+                                        </TableCell>
+                                        <TableCell className={`text-right ${item.priceChange?.h24 > 0 ? 'text-green-600' : 'text-destructive'}`}>
+                                            {item.priceChange?.h24 ? `${item.priceChange.h24.toFixed(2)}%` : 'N/A'}
+                                        </TableCell>
+                                        <TableCell className="text-right">{formatMarketCap(item.marketCap)}</TableCell>
+                                        <TableCell className="text-right text-muted-foreground">
+                                            {item.lastUpdated ? format(new Date(item.lastUpdated), "HH:mm:ss") : 'N/A'}
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                     </ScrollArea>
                    ) : (
                      <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/50 p-12 text-center">
                        <p className="text-muted-foreground">No data in database.</p>
@@ -432,3 +480,5 @@ export default function Home() {
     </div>
   );
 }
+
+    

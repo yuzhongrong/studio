@@ -106,28 +106,6 @@ export async function getFilterSuggestions(input: SuggestFiltersInput) {
     }
 }
 
-export async function getMongoData() {
-    if (!process.env.MONGO_URI || process.env.MONGO_URI.includes("YOUR_CONNECTION_STRING")) {
-        return { data: null, error: 'MongoDB is not configured. Please set MONGO_URI in your .env file.' };
-    }
-    try {
-        const db = await getDb();
-        if (!db) {
-            return { data: null, error: 'MongoDB is not configured. Please set MONGO_URI in your .env file.' };
-        }
-        const collection = db.collection('pairs');
-        const data = await collection.find({}).toArray();
-        const serializableData = data.map(item => ({
-            ...item,
-            _id: item._id.toString(),
-        }));
-        return { data: serializableData, error: null };
-    } catch (error: any) {
-        console.error('Failed to fetch data from MongoDB:', error);
-        return { data: null, error: `Failed to retrieve data from the database: ${error.message}` };
-    }
-}
-
 export async function updateRsiData() {
     if (!process.env.MONGO_URI || process.env.MONGO_URI.includes("YOUR_CONNECTION_STRING")) {
         return { success: false, error: 'MongoDB is not configured. Please set MONGO_URI in your .env file.' };
@@ -208,3 +186,5 @@ export async function updateRsiData() {
         return { success: false, error: `Failed to update RSI data: ${error.message}` };
     }
 }
+
+    
