@@ -176,6 +176,10 @@ export async function updateRsiData() {
                     'rsi-1h': rsi1h,
                     'rsi_200_5m': raw5m,
                     'rsi_200_1h': raw1h,
+                    symbol: pair.baseToken?.symbol,
+                    priceChange: pair.priceChange,
+                    marketCap: pair.marketCap,
+                    info: pair.info,
                     lastUpdated: new Date()
                 };
 
