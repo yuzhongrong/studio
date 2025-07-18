@@ -107,6 +107,14 @@ export async function getFilterSuggestions(input: SuggestFiltersInput) {
     }
 }
 
+const formatMarketCap = (marketCap: number) => {
+    if (!marketCap) return 'N/A';
+    if (marketCap >= 1_000_000_000) return `${(marketCap / 1_000_000_000).toFixed(2)}B`;
+    if (marketCap >= 1_000_000) return `${(marketCap / 1_000_000).toFixed(2)}M`;
+    if (marketCap >= 1_000) return `${(marketCap / 1_000).toFixed(2)}K`;
+    return marketCap.toFixed(2);
+};
+
 export async function updateRsiData() {
     if (!process.env.MONGO_URI || process.env.MONGO_URI.includes("YOUR_CONNECTION_STRING")) {
         return { success: false, error: 'MongoDB is not configured. Please set MONGO_URI in your .env file.' };
@@ -158,6 +166,7 @@ Token: *${pair.baseToken?.symbol || 'N/A'}*
 Action: *买入*
 RSI (1H): \`${rsi1h.toFixed(2)}\`
 RSI (5m): \`${rsi5m.toFixed(2)}\`
+市值: \`${formatMarketCap(pair.marketCap)}\`
 CA: \`${tokenContractAddress}\`
 
 [View on GMGN](https://gmgn.ai/sol/token/${tokenContractAddress})
