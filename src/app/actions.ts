@@ -149,27 +149,13 @@ export async function updateRsiData() {
                 const rsi5m = calculateRSI(candles5m.map(c => c.close));
                 const rsi1h = calculateRSI(candles1h.map(c => c.close));
 
-                // Telegram Alert Logic
+                // Telegram Alert Logic - ONLY for "Buy" signal
                 if (process.env.TELEGRAM_NOTIFICATIONS_ENABLED === 'true' && rsi1h && rsi5m) {
-                    let actionText = '';
-                    let shouldNotify = false;
-
                     if (rsi5m < 30 && rsi1h < 30) {
-                        actionText = '买入';
-                        shouldNotify = true;
-                    } else if (rsi5m < 30 && rsi1h >= 30) {
-                        actionText = '保守买入';
-                        shouldNotify = true;
-                    } else if (rsi5m >= 30) { // This covers both "观望" cases
-                        actionText = '观望';
-                        shouldNotify = true;
-                    }
-
-                    if (shouldNotify) {
                         const message = `
 🔔 *RSI Alert* 🔔
 Token: *${pair.baseToken?.symbol || 'N/A'}*
-Action: *${actionText}*
+Action: *买入*
 RSI (1H): \`${rsi1h.toFixed(2)}\`
 RSI (5m): \`${rsi5m.toFixed(2)}\`
 
