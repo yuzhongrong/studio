@@ -160,7 +160,7 @@ RSI (1H): \`${rsi1h.toFixed(2)}\`
 RSI (5m): \`${rsi5m.toFixed(2)}\`
 CA: \`${tokenContractAddress}\`
 
-[View on GMGN](https://gmgn.ai/sol/token/${pair.pairAddress})
+[View on GMGN](https://gmgn.ai/sol/token/${tokenContractAddress})
                         `;
                         await sendTelegramAlert(message);
                     }
