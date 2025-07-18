@@ -127,12 +127,10 @@ export async function updateRsiData() {
         }
 
         const solAddress = "So11111111111111111111111111111111111111112";
-        const NOTIFICATION_COOLDOWN_MS = 60 * 60 * 1000; // 1 hour
         let updatedCount = 0;
         let failedCount = 0;
 
         for (const pair of pairs) {
-            let rsiDataToSave: any = {};
             try {
                 let tokenContractAddress = pair.baseToken?.address;
                 if (tokenContractAddress === solAddress) {
@@ -151,16 +149,10 @@ export async function updateRsiData() {
                 const rsi5m = calculateRSI(candles5m.map(c => c.close));
                 const rsi1h = calculateRSI(candles1h.map(c => c.close));
                 
-                let notificationSent = false;
-                // Telegram Alert Logic - ONLY for "Buy" signal with cooldown
+                // Telegram Alert Logic
                 if (process.env.TELEGRAM_NOTIFICATIONS_ENABLED === 'true' && rsi1h && rsi5m) {
                     if (rsi5m < 30 && rsi1h < 30) {
-                        const existingDoc = await rsiCollection.findOne({ tokenContractAddress: tokenContractAddress });
-                        const now = new Date();
-                        const lastNotifiedAt = existingDoc?.lastNotifiedAt;
-
-                        if (!lastNotifiedAt || (now.getTime() - new Date(lastNotifiedAt).getTime()) > NOTIFICATION_COOLDOWN_MS) {
-                             const message = `
+                        const message = `
 🔔 *RSI Alert* 🔔
 Token: *${pair.baseToken?.symbol || 'N/A'}*
 Action: *买入*
@@ -169,14 +161,11 @@ RSI (5m): \`${rsi5m.toFixed(2)}\`
 
 [View on GMGN](https://gmgn.ai/sol/token/${pair.pairAddress})
                         `;
-                            await sendTelegramAlert(message);
-                            notificationSent = true;
-                        }
+                        await sendTelegramAlert(message);
                     }
                 }
 
-
-                rsiDataToSave = {
+                const rsiDataToSave = {
                     tokenContractAddress: tokenContractAddress,
                     'rsi-5m': rsi5m,
                     'rsi-1h': rsi1h,
@@ -189,10 +178,6 @@ RSI (5m): \`${rsi5m.toFixed(2)}\`
                     lastUpdated: new Date()
                 };
                 
-                if (notificationSent) {
-                    rsiDataToSave.lastNotifiedAt = new Date();
-                }
-
                 await rsiCollection.updateOne(
                     { tokenContractAddress: tokenContractAddress },
                     { $set: rsiDataToSave },
