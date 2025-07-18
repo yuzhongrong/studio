@@ -156,7 +156,7 @@ export async function updateRsiData() {
 Token: **${pair.baseToken?.symbol || 'N/A'}**
 RSI (1H): \`${rsi1h.toFixed(2)}\`
 RSI (5m): \`${rsi5m.toFixed(2)}\`
-[View on DexScreener](https://dexscreener.com/solana/${pair.pairAddress})
+[View on GMGN](https://gmgn.ai/sol/token/${pair.pairAddress})
                     `;
                     await sendTelegramAlert(message);
                 }
@@ -200,5 +200,3 @@ RSI (5m): \`${rsi5m.toFixed(2)}\`
         return { success: false, error: `Failed to update RSI data: ${error.message}` };
     }
 }
-
-    
