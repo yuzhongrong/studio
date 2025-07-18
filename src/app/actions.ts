@@ -150,30 +150,16 @@ export async function updateRsiData() {
                 const rsi1h = calculateRSI(candles1h.map(c => c.close));
 
                 // Telegram Alert Logic
-                if (process.env.TELEGRAM_NOTIFICATIONS_ENABLED === 'true' && rsi1h && rsi5m) {
-                    let action_suggestion = '';
-                    
-                    if (rsi1h < 20 && rsi5m < 20) {
-                        action_suggestion = '买入';
-                    } else if (rsi1h < 30 && rsi5m < 30) {
-                        action_suggestion = '保守买入';
-                    } else if (rsi1h < 30) {
-                        action_suggestion = '观望';
-                    }
-
-                    if (action_suggestion) {
-                        const message = `
+                if (process.env.TELEGRAM_NOTIFICATIONS_ENABLED === 'true' && rsi1h && rsi5m && rsi1h < 30 && rsi5m < 30) {
+                    const message = `
 🔔 *RSI Alert* 🔔
 Token: *${pair.baseToken?.symbol || 'N/A'}*
-操作建议: *${action_suggestion}*
-
 RSI (1H): \`${rsi1h.toFixed(2)}\`
 RSI (5m): \`${rsi5m.toFixed(2)}\`
 
 [View on GMGN](https://gmgn.ai/sol/token/${pair.pairAddress})
                         `;
-                        await sendTelegramAlert(message);
-                    }
+                    await sendTelegramAlert(message);
                 }
 
 
