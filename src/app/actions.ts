@@ -159,14 +159,14 @@ export async function updateRsiData() {
                 
                 // Telegram Alert Logic
                 if (process.env.TELEGRAM_NOTIFICATIONS_ENABLED === 'true' && rsi1h && rsi5m) {
-                    if (rsi5m < 30 && rsi1h < 30) {
+                     if (rsi5m < 30 && rsi1h < 30) {
                         const message = `
 🔔 *RSI Alert* 🔔
 Token: *${pair.baseToken?.symbol || 'N/A'}*
 Action: *买入*
 RSI (1H): \`${rsi1h.toFixed(2)}\`
 RSI (5m): \`${rsi5m.toFixed(2)}\`
-市值: \`${formatMarketCap(pair.marketCap)}\`
+MC: \`${formatMarketCap(pair.marketCap)}\`
 CA: \`${tokenContractAddress}\`
 
 [View on GMGN](https://gmgn.ai/sol/token/${tokenContractAddress})
