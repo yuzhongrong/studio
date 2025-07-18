@@ -3,13 +3,6 @@
  * @fileOverview Service for fetching OKX candle data and calculating RSI.
  */
 
-if (!process.env.OK_ACCESS_KEY || !process.env.OK_ACCESS_PASSPHRASE) {
-  throw new Error('Missing OKX API credentials in environment variables.');
-}
-
-const OKX_API_KEY = process.env.OK_ACCESS_KEY;
-const OKX_PASSPHRASE = process.env.OK_ACCESS_PASSPHRASE;
-
 export interface Candle {
   timestamp: number;
   open: number;
@@ -79,6 +72,13 @@ export function calculateRSI(closePrices: number[], period: number = 14): number
  * @returns A promise that resolves to an object containing parsed and raw data.
  */
 export async function fetchOkxCandles(tokenAddress: string, bar: '5m' | '1H', limit: number): Promise<{ parsedData: Candle[], rawData: any }> {
+    const OKX_API_KEY = process.env.OK_ACCESS_KEY;
+    const OKX_PASSPHRASE = process.env.OK_ACCESS_PASSPHRASE;
+
+    if (!OKX_API_KEY || !OKX_PASSPHRASE) {
+      throw new Error('Missing OKX API credentials in environment variables.');
+    }
+
     const url = `https://web3.okx.com/api/v5/dex/market/candles?chainIndex=501&tokenContractAddress=${tokenAddress}&bar=${bar}&limit=${limit}`;
 
     const headers = {

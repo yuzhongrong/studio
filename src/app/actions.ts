@@ -3,6 +3,7 @@
 import { suggestFilters, SuggestFiltersInput } from '@/ai/flows/suggest-filters';
 import { getDb } from '@/lib/mongodb';
 import { fetchOkxCandles, calculateRSI } from '@/lib/okx-service';
+import { sendTelegramAlert } from '@/lib/telegram-service';
 
 function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -147,6 +148,19 @@ export async function updateRsiData() {
                 
                 const rsi5m = calculateRSI(candles5m.map(c => c.close));
                 const rsi1h = calculateRSI(candles1h.map(c => c.close));
+
+                // Telegram Alert Logic
+                if (process.env.TELEGRAM_NOTIFICATIONS_ENABLED === 'true' && rsi1h && rsi5m && rsi1h < 30 && rsi5m < 30) {
+                    const message = `
+🔔 **RSI Alert** 🔔
+Token: **${pair.baseToken?.symbol || 'N/A'}**
+RSI (1H): \`${rsi1h.toFixed(2)}\`
+RSI (5m): \`${rsi5m.toFixed(2)}\`
+[View on DexScreener](https://dexscreener.com/solana/${pair.pairAddress})
+                    `;
+                    await sendTelegramAlert(message);
+                }
+
 
                 const rsiDataToSave = {
                     tokenContractAddress: tokenContractAddress,
