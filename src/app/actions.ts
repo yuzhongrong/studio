@@ -158,6 +158,7 @@ Token: *${pair.baseToken?.symbol || 'N/A'}*
 Action: *买入*
 RSI (1H): \`${rsi1h.toFixed(2)}\`
 RSI (5m): \`${rsi5m.toFixed(2)}\`
+CA: \`${tokenContractAddress}\`
 
 [View on GMGN](https://gmgn.ai/sol/token/${pair.pairAddress})
                         `;
