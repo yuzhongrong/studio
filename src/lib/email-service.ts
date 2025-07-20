@@ -82,33 +82,9 @@ export async function sendBuySignalEmails(tokenInfo: AlertData): Promise<void> {
             return;
         }
 
-        console.log(`Successfully queued ${data?.length || 0} emails for sending.`, data);
+        console.log(`Successfully queued ${data?.created_at ? emailBatch.length : 0} emails for sending.`);
 
     } catch (error: any) {
         console.error('An error occurred in sendBuySignalEmails:', error);
-    }
-}
-
-
-/**
- * Triggers the email alert API endpoint.
- * This function is called from a server action to trigger the background email sending process.
- * @param alertData The data for the alert.
- */
-export async function triggerEmailAlerts(alertData: AlertData) {
-    const domain = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9002';
-    const url = `${domain}/api/send-emails`;
-
-    try {
-        await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(alertData),
-        });
-        console.log(`Signal sent to ${url} for token ${alertData.symbol}`);
-    } catch (error) {
-        console.error(`Failed to trigger email alert service at ${url}:`, error);
     }
 }

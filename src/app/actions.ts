@@ -4,7 +4,7 @@ import { suggestFilters, SuggestFiltersInput } from '@/ai/flows/suggest-filters'
 import { getDb } from '@/lib/mongodb';
 import { fetchOkxCandles, calculateRSI } from '@/lib/okx-service';
 import { sendTelegramAlert } from '@/lib/telegram-service';
-import { triggerEmailAlerts } from '@/lib/email-service';
+import { sendBuySignalEmails } from '@/lib/email-service';
 
 function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -185,8 +185,8 @@ CA: \`${alertData.tokenContractAddress}\`
                         // Send Telegram alert
                         await sendTelegramAlert(message);
                         
-                        // Trigger email alerts via API endpoint
-                        await triggerEmailAlerts(alertData);
+                        // Trigger email alerts directly
+                        await sendBuySignalEmails(alertData);
                     }
                 }
 
