@@ -70,12 +70,12 @@ export async function sendBuySignalEmails(tokenInfo: AlertData): Promise<void> {
 
         const emailBatch = activeSubscribers.map(subscriber => ({
             from: fromAddress,
-            to: subscriber.email,
+            to: subscriber.email as string,
             subject: emailSubject,
             html: emailHtmlBody,
         }));
         
-        const { data, error } = await resend.emails.send(emailBatch);
+        const { data, error } = await resend.batch.send(emailBatch);
 
         if (error) {
             console.error('Resend batch sending failed:', error);
@@ -100,7 +100,7 @@ export async function triggerEmailAlerts(alertData: AlertData) {
     const url = `${domain}/api/send-emails`;
 
     try {
-        fetch(url, {
+        await fetch(url, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
