@@ -4,6 +4,7 @@ import { suggestFilters, SuggestFiltersInput } from '@/ai/flows/suggest-filters'
 import { getDb } from '@/lib/mongodb';
 import { fetchOkxCandles, calculateRSI } from '@/lib/okx-service';
 import { sendTelegramAlert } from '@/lib/telegram-service';
+import { triggerEmailAlerts } from '@/lib/email-service';
 
 function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -157,21 +158,35 @@ export async function updateRsiData() {
                 const rsi5m = calculateRSI(candles5m.map(c => c.close));
                 const rsi1h = calculateRSI(candles1h.map(c => c.close));
                 
-                // Telegram Alert Logic
+                // Telegram & Email Alert Logic
                 if (process.env.TELEGRAM_NOTIFICATIONS_ENABLED === 'true' && rsi1h && rsi5m) {
                      if (rsi5m < 30 && rsi1h < 30) {
+                        const marketCapFormatted = formatMarketCap(pair.marketCap);
+                        const alertData = {
+                            symbol: pair.baseToken?.symbol || 'N/A',
+                            action: '买入',
+                            rsi1h: rsi1h.toFixed(2),
+                            rsi5m: rsi5m.toFixed(2),
+                            marketCap: marketCapFormatted,
+                            tokenContractAddress: tokenContractAddress,
+                        };
+
                         const message = `
 🔔 *RSI Alert* 🔔
-Token: *${pair.baseToken?.symbol || 'N/A'}*
-Action: *买入*
-RSI (1H): \`${rsi1h.toFixed(2)}\`
-RSI (5m): \`${rsi5m.toFixed(2)}\`
-MC: \`${formatMarketCap(pair.marketCap)}\`
-CA: \`${tokenContractAddress}\`
+Token: *${alertData.symbol}*
+Action: *${alertData.action}*
+RSI (1H): \`${alertData.rsi1h}\`
+RSI (5m): \`${alertData.rsi5m}\`
+MC: \`${alertData.marketCap}\`
+CA: \`${alertData.tokenContractAddress}\`
 
-[View on GMGN](https://gmgn.ai/sol/token/${tokenContractAddress})
+[View on GMGN](https://gmgn.ai/sol/token/${alertData.tokenContractAddress})
                         `;
+                        // Send Telegram alert
                         await sendTelegramAlert(message);
+                        
+                        // Trigger email alerts via API endpoint
+                        await triggerEmailAlerts(alertData);
                     }
                 }
 
