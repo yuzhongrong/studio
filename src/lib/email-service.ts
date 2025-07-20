@@ -107,8 +107,8 @@ export async function triggerEmailAlerts(alertData: AlertData) {
             },
             body: JSON.stringify(alertData),
         });
-        console.log(`Signal sent to /api/send-emails for token ${alertData.symbol}`);
+        console.log(`Signal sent to ${url} for token ${alertData.symbol}`);
     } catch (error) {
-        console.error('Failed to trigger email alert service:', error);
+        console.error(`Failed to trigger email alert service at ${url}:`, error);
     }
 }
