@@ -2,7 +2,6 @@
  * @fileOverview Service for sending email notifications based on buy signals using Resend.
  */
 import { getDb } from '@/lib/mongodb';
-import { Resend } from 'resend';
 
 export interface AlertData {
     symbol: string;
@@ -22,7 +21,9 @@ export async function sendBuySignalEmails(tokenInfo: AlertData): Promise<void> {
         console.warn('Resend API Key is not configured. Email features will be disabled.');
         return;
     }
-
+    
+    // Dynamically import Resend inside the function to avoid instrumentation errors
+    const { Resend } = await import('resend');
     const resend = new Resend(process.env.RESEND_API_KEY);
     
     console.log(`Starting to send email alerts for ${tokenInfo.symbol}...`);
@@ -50,13 +51,13 @@ export async function sendBuySignalEmails(tokenInfo: AlertData): Promise<void> {
         const emailSubject = `🔔 RSI Alert: Buy Signal for ${tokenInfo.symbol}`;
         const emailHtmlBody = `
             <div style="font-family: sans-serif; padding: 20px; border: 1px solid #ddd; border-radius: 8px; max-width: 600px; margin: auto;">
-                <h2 style="text-align: center;">🔔 *RSI Alert* 🔔</h2>
-                <p>Token: *${tokenInfo.symbol}*</p>
-                <p>Action: *${tokenInfo.action}*</p>
-                <p>RSI (1H): \`${tokenInfo.rsi1h}\`</p>
-                <p>RSI (5m): \`${tokenInfo.rsi5m}\`</p>
-                <p>MC: \`${tokenInfo.marketCap}\`</p>
-                <p>CA: \`${tokenInfo.tokenContractAddress}\`</p>
+                <h2 style="text-align: center;">🔔 <strong>RSI Alert</strong> 🔔</h2>
+                <p>Token: <strong>${tokenInfo.symbol}</strong></p>
+                <p>Action: <strong>${tokenInfo.action}</strong></p>
+                <p>RSI (1H): <code>${tokenInfo.rsi1h}</code></p>
+                <p>RSI (5m): <code>${tokenInfo.rsi5m}</code></p>
+                <p>MC: <code>${tokenInfo.marketCap}</code></p>
+                <p>CA: <code>${tokenInfo.tokenContractAddress}</code></p>
                 <p style="margin-top: 20px;">
                     <a href="https://gmgn.ai/sol/token/${tokenInfo.tokenContractAddress}" style="display: inline-block; padding: 10px 15px; background-color: #007bff; color: #ffffff; text-decoration: none; border-radius: 5px;">View on GMGN</a>
                 </p>
