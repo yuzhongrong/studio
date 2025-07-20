@@ -13,22 +13,17 @@ export interface AlertData {
     tokenContractAddress: string;
 }
 
-let resend: Resend | null = null;
-if (process.env.RESEND_API_KEY && !process.env.RESEND_API_KEY.includes('YOUR_API_KEY')) {
-    resend = new Resend(process.env.RESEND_API_KEY);
-} else {
-    console.warn('Resend API Key is not configured. Email features will be disabled.');
-}
-
 /**
  * Fetches active user emails and sends them a buy signal notification using Resend.
  * @param tokenInfo The information about the token that triggered the alert.
  */
 export async function sendBuySignalEmails(tokenInfo: AlertData): Promise<void> {
-    if (!resend) {
-        console.error('Email Service Error: Resend is not configured. Skipping email sending.');
+    if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY.includes('YOUR_API_KEY')) {
+        console.warn('Resend API Key is not configured. Email features will be disabled.');
         return;
     }
+
+    const resend = new Resend(process.env.RESEND_API_KEY);
     
     console.log(`Starting to send email alerts for ${tokenInfo.symbol}...`);
     
@@ -55,13 +50,13 @@ export async function sendBuySignalEmails(tokenInfo: AlertData): Promise<void> {
         const emailSubject = `🔔 RSI Alert: Buy Signal for ${tokenInfo.symbol}`;
         const emailHtmlBody = `
             <div style="font-family: sans-serif; padding: 20px; border: 1px solid #ddd; border-radius: 8px; max-width: 600px; margin: auto;">
-                <h2 style="text-align: center;">🔔 RSI Alert 🔔</h2>
-                <p><strong>Token:</strong> ${tokenInfo.symbol}</p>
-                <p><strong>Action:</strong> ${tokenInfo.action}</p>
-                <p><strong>RSI (1H):</strong> <code>${tokenInfo.rsi1h}</code></p>
-                <p><strong>RSI (5m):</strong> <code>${tokenInfo.rsi5m}</code></p>
-                <p><strong>MC:</strong> <code>${tokenInfo.marketCap}</code></p>
-                <p><strong>CA:</strong> <code>${tokenInfo.tokenContractAddress}</code></p>
+                <h2 style="text-align: center;">🔔 *RSI Alert* 🔔</h2>
+                <p>Token: *${tokenInfo.symbol}*</p>
+                <p>Action: *${tokenInfo.action}*</p>
+                <p>RSI (1H): \`${tokenInfo.rsi1h}\`</p>
+                <p>RSI (5m): \`${tokenInfo.rsi5m}\`</p>
+                <p>MC: \`${tokenInfo.marketCap}\`</p>
+                <p>CA: \`${tokenInfo.tokenContractAddress}\`</p>
                 <p style="margin-top: 20px;">
                     <a href="https://gmgn.ai/sol/token/${tokenInfo.tokenContractAddress}" style="display: inline-block; padding: 10px 15px; background-color: #007bff; color: #ffffff; text-decoration: none; border-radius: 5px;">View on GMGN</a>
                 </p>
@@ -79,14 +74,14 @@ export async function sendBuySignalEmails(tokenInfo: AlertData): Promise<void> {
             html: emailHtmlBody,
         }));
         
-        const { data, error } = await resend.batch.send(emailBatch);
+        const { data, error } = await resend.emails.send(emailBatch);
 
         if (error) {
             console.error('Resend batch sending failed:', error);
             return;
         }
 
-        console.log(`Successfully queued ${data?.created.length || 0} emails for sending.`, data);
+        console.log(`Successfully queued ${data?.length || 0} emails for sending.`, data);
 
     } catch (error: any) {
         console.error('An error occurred in sendBuySignalEmails:', error);
