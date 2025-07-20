@@ -52,27 +52,26 @@ export async function sendBuySignalEmails(tokenInfo: AlertData): Promise<void> {
             return;
         }
 
-        const emailSubject = `🚨 Buy Signal Alert: ${tokenInfo.symbol}`;
+        const emailSubject = `🔔 RSI Alert: Buy Signal for ${tokenInfo.symbol}`;
         const emailHtmlBody = `
-            <h1>Buy Signal Detected: ${tokenInfo.symbol}</h1>
-            <p>A "Buy" signal has been detected for the token: <strong>${tokenInfo.symbol}</strong>.</p>
-            <h3>Details:</h3>
-            <ul>
-                <li><strong>Token:</strong> ${tokenInfo.symbol}</li>
-                <li><strong>RSI (1H):</strong> ${tokenInfo.rsi1h}</li>
-                <li><strong>RSI (5m):</strong> ${tokenInfo.rsi5m}</li>
-                <li><strong>Market Cap:</strong> ${tokenInfo.marketCap}</li>
-                <li><strong>Contract Address:</strong> <code>${tokenInfo.tokenContractAddress}</code></li>
-            </ul>
-            <p><a href="https://gmgn.ai/sol/token/${tokenInfo.tokenContractAddress}">View on GMGN.ai</a></p>
-            <br>
-            <p><em>Disclaimer: This is not financial advice. Do your own research.</em></p>
+            <div style="font-family: sans-serif; padding: 20px; border: 1px solid #ddd; border-radius: 8px; max-width: 600px; margin: auto;">
+                <h2 style="text-align: center;">🔔 RSI Alert 🔔</h2>
+                <p><strong>Token:</strong> ${tokenInfo.symbol}</p>
+                <p><strong>Action:</strong> ${tokenInfo.action}</p>
+                <p><strong>RSI (1H):</strong> <code>${tokenInfo.rsi1h}</code></p>
+                <p><strong>RSI (5m):</strong> <code>${tokenInfo.rsi5m}</code></p>
+                <p><strong>MC:</strong> <code>${tokenInfo.marketCap}</code></p>
+                <p><strong>CA:</strong> <code>${tokenInfo.tokenContractAddress}</code></p>
+                <p style="margin-top: 20px;">
+                    <a href="https://gmgn.ai/sol/token/${tokenInfo.tokenContractAddress}" style="display: inline-block; padding: 10px 15px; background-color: #007bff; color: #ffffff; text-decoration: none; border-radius: 5px;">View on GMGN</a>
+                </p>
+                <br>
+                <p style="font-size: 12px; color: #888;"><em>Disclaimer: This is not financial advice. Do your own research.</em></p>
+            </div>
         `;
 
-        // The 'from' address must be a verified domain in your Resend account.
         const fromAddress = 'Pumpwatch Signals <signals@pumpwatch.virtualchats.xyz>';
 
-        // Batch send emails
         const emailBatch = activeSubscribers.map(subscriber => ({
             from: fromAddress,
             to: subscriber.email,
@@ -101,14 +100,10 @@ export async function sendBuySignalEmails(tokenInfo: AlertData): Promise<void> {
  * @param alertData The data for the alert.
  */
 export async function triggerEmailAlerts(alertData: AlertData) {
-    // This needs to be the absolute URL when deployed.
-    // In development, localhost is fine. For production, use the actual domain.
     const domain = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9002';
     const url = `${domain}/api/send-emails`;
 
     try {
-        // We use fetch to call our own API endpoint.
-        // We don't need to wait for the response ('fire and forget').
         fetch(url, {
             method: 'POST',
             headers: {
