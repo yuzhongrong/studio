@@ -70,12 +70,7 @@ export async function sendBuySignalEmails(tokenInfo: AlertData): Promise<void> {
         `;
 
         // The 'from' address must be a verified domain in your Resend account.
-        const fromAddress = process.env.EMAIL_FROM_ADDRESS || 'alert@yourdomain.com';
-        if (fromAddress.includes('yourdomain.com')) {
-             console.error('Please configure a valid EMAIL_FROM_ADDRESS in your .env file.');
-             return;
-        }
-
+        const fromAddress = 'Pumpwatch Signals <signals@pumpwatch.virtualchats.xyz>';
 
         // Batch send emails
         const emailBatch = activeSubscribers.map(subscriber => ({
@@ -92,7 +87,7 @@ export async function sendBuySignalEmails(tokenInfo: AlertData): Promise<void> {
             return;
         }
 
-        console.log(`Successfully sent ${data?.created.length} emails.`, data);
+        console.log(`Successfully queued ${data?.created.length || 0} emails for sending.`, data);
 
     } catch (error: any) {
         console.error('An error occurred in sendBuySignalEmails:', error);
