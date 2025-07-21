@@ -190,9 +190,15 @@ export async function updateRsiData() {
                         tokenContractAddress: tokenContractAddress,
                     };
                     
-                    // Telegram Alert Logic (Original condition)
-                    if (process.env.TELEGRAM_NOTIFICATIONS_ENABLED === 'true' && rsi1h < 40 && rsi5m < 30) {
-                        const message = `
+                    const triggerCondition = rsi1h < 30 && rsi5m < 30;
+
+                    // Telegram & Email Alert Logic
+                    if (triggerCondition) {
+                        console.log(`Alert condition met for ${alertData.symbol}. Triggering notifications.`);
+                        
+                        // Telegram Alert
+                        if (process.env.TELEGRAM_NOTIFICATIONS_ENABLED === 'true') {
+                            const message = `
 🔔 *RSI Alert* 🔔
 Token: *${alertData.symbol}*
 Action: *${alertData.action}*
@@ -202,13 +208,11 @@ MC: \`${alertData.marketCap}\`
 CA: \`${alertData.tokenContractAddress}\`
 
 [View on GMGN](https://gmgn.ai/sol/token/${alertData.tokenContractAddress})
-                        `;
-                        await sendTelegramAlert(message);
-                    }
-                    
-                    // Email Alert Logic (Test condition)
-                    if (rsi5m < 30 && rsi1h > 30) {
-                        console.log(`Email test condition met for ${alertData.symbol}. Triggering email send.`);
+                            `;
+                            await sendTelegramAlert(message);
+                        }
+                        
+                        // Email Alert
                         await sendBuySignalEmails(alertData);
                     }
                 }
