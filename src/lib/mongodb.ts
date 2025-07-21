@@ -5,12 +5,24 @@ import { config } from 'dotenv';
 config();
 
 const uri = process.env.MONGO_URI;
-const dbName = 'pumpwatch'; // Explicitly define the database name
+let dbName = 'pumpwatch'; // Default database name
 
 // A basic check for a placeholder value.
 if (!uri || uri.includes("YOUR_CONNECTION_STRING")) {
   console.warn('MongoDB URI is not configured or is a placeholder. Database features will be disabled.');
+} else {
+    // Attempt to parse dbName from URI if not 'test'
+    try {
+        const url = new URL(uri);
+        const pathDbName = url.pathname.slice(1);
+        if (pathDbName && pathDbName !== 'test') { // 'test' is often a placeholder
+            dbName = pathDbName;
+        }
+    } catch (e) {
+        console.warn("Could not parse database name from MONGO_URI, defaulting to 'pumpwatch'.");
+    }
 }
+
 
 const options = {};
 
