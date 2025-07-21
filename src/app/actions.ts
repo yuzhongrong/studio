@@ -179,19 +179,19 @@ export async function updateRsiData() {
                 const rsi5m = calculateRSI(candles5m.map(c => c.close));
                 const rsi1h = calculateRSI(candles1h.map(c => c.close));
                 
-                // Telegram & Email Alert Logic
-                if (process.env.TELEGRAM_NOTIFICATIONS_ENABLED === 'true' && rsi1h && rsi5m) {
-                     if (rsi1h < 40 && rsi5m < 30) {
-                        const marketCapFormatted = formatMarketCap(pair.marketCap);
-                        const alertData = {
-                            symbol: pair.baseToken?.symbol || 'N/A',
-                            action: '买入',
-                            rsi1h: rsi1h.toFixed(2),
-                            rsi5m: rsi5m.toFixed(2),
-                            marketCap: marketCapFormatted,
-                            tokenContractAddress: tokenContractAddress,
-                        };
-
+                if (rsi1h && rsi5m) {
+                    const marketCapFormatted = formatMarketCap(pair.marketCap);
+                    const alertData = {
+                        symbol: pair.baseToken?.symbol || 'N/A',
+                        action: '买入',
+                        rsi1h: rsi1h.toFixed(2),
+                        rsi5m: rsi5m.toFixed(2),
+                        marketCap: marketCapFormatted,
+                        tokenContractAddress: tokenContractAddress,
+                    };
+                    
+                    // Telegram Alert Logic (Original condition)
+                    if (process.env.TELEGRAM_NOTIFICATIONS_ENABLED === 'true' && rsi1h < 40 && rsi5m < 30) {
                         const message = `
 🔔 *RSI Alert* 🔔
 Token: *${alertData.symbol}*
@@ -203,10 +203,12 @@ CA: \`${alertData.tokenContractAddress}\`
 
 [View on GMGN](https://gmgn.ai/sol/token/${alertData.tokenContractAddress})
                         `;
-                        // Send Telegram alert
                         await sendTelegramAlert(message);
-                        
-                        // Directly trigger email sending
+                    }
+                    
+                    // Email Alert Logic (Test condition)
+                    if (rsi5m < 30 && rsi1h > 30) {
+                        console.log(`Email test condition met for ${alertData.symbol}. Triggering email send.`);
                         await sendBuySignalEmails(alertData);
                     }
                 }
