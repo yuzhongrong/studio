@@ -192,9 +192,9 @@ export async function updateRsiData() {
                     
                     const triggerCondition = rsi1h < 30 && rsi5m < 30;
 
-                    // Telegram & Email Alert Logic
+                    // Combined Alert Logic
                     if (triggerCondition) {
-                        console.log(`Alert condition met for ${alertData.symbol}. Triggering notifications.`);
+                        console.log(`Alert condition met for ${alertData.symbol}. Triggering all notifications.`);
                         
                         // Telegram Alert
                         if (process.env.TELEGRAM_NOTIFICATIONS_ENABLED === 'true') {
