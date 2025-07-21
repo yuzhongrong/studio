@@ -15,11 +15,13 @@ if (!uri || uri.includes("YOUR_CONNECTION_STRING")) {
     try {
         const url = new URL(uri);
         const pathDbName = url.pathname.slice(1);
-        if (pathDbName && pathDbName !== 'test') { // 'test' is often a placeholder
+        // If the path-based database name exists and is not a common placeholder like 'test', use it.
+        // Otherwise, stick with the default 'pumpwatch'.
+        if (pathDbName && pathDbName.toLowerCase() !== 'test') { 
             dbName = pathDbName;
         }
     } catch (e) {
-        console.warn("Could not parse database name from MONGO_URI, defaulting to 'pumpwatch'.");
+        console.warn("Could not parse database name from MONGO_URI, ensuring default 'pumpwatch' is used.");
     }
 }
 
@@ -43,11 +45,13 @@ if (uri && !uri.includes("YOUR_CONNECTION_STRING")) {
         globalWithMongo._mongoClientPromise = client.connect();
       }
       clientPromise = globalWithMongo._mongoClientPromise;
+      // Explicitly connect to the intended database name
       dbPromise = clientPromise.then(client => client.db(dbName));
     } else {
       // In production mode, it's best to not use a global variable.
       client = new MongoClient(uri, options);
       clientPromise = client.connect();
+      // Explicitly connect to the intended database name
       dbPromise = clientPromise.then(client => client.db(dbName));
     }
 }
@@ -58,7 +62,12 @@ export async function getDb(): Promise<Db | null> {
         return null;
     }
     try {
-        return await dbPromise;
+        const db = await dbPromise;
+        // Log the database name on first successful connection to confirm.
+        if (db && db.databaseName) {
+            // console.log(`Successfully connected to database: ${db.databaseName}`);
+        }
+        return db;
     } catch (error) {
         console.error("Failed to connect to the database", error);
         return null;
