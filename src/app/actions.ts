@@ -181,7 +181,7 @@ export async function updateRsiData() {
                 
                 // Telegram & Email Alert Logic
                 if (process.env.TELEGRAM_NOTIFICATIONS_ENABLED === 'true' && rsi1h && rsi5m) {
-                     if (rsi5m < 30 && rsi1h < 30) {
+                     if (rsi1h < 40 && rsi5m < 30) {
                         const marketCapFormatted = formatMarketCap(pair.marketCap);
                         const alertData = {
                             symbol: pair.baseToken?.symbol || 'N/A',
