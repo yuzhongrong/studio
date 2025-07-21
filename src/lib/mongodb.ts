@@ -5,6 +5,7 @@ import { config } from 'dotenv';
 config();
 
 const uri = process.env.MONGO_URI;
+const dbName = 'pumpwatch'; // Explicitly define the database name
 
 // A basic check for a placeholder value.
 if (!uri || uri.includes("YOUR_CONNECTION_STRING")) {
@@ -30,12 +31,12 @@ if (uri && !uri.includes("YOUR_CONNECTION_STRING")) {
         globalWithMongo._mongoClientPromise = client.connect();
       }
       clientPromise = globalWithMongo._mongoClientPromise;
-      dbPromise = clientPromise.then(client => client.db());
+      dbPromise = clientPromise.then(client => client.db(dbName));
     } else {
       // In production mode, it's best to not use a global variable.
       client = new MongoClient(uri, options);
       clientPromise = client.connect();
-      dbPromise = clientPromise.then(client => client.db());
+      dbPromise = clientPromise.then(client => client.db(dbName));
     }
 }
 
