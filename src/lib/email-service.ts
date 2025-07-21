@@ -1,17 +1,9 @@
 /**
  * @fileOverview Service for sending email notifications based on buy signals using Resend.
  */
+import type { Resend } from 'resend';
 import { getDb } from '@/lib/mongodb';
-import { Resend } from 'resend';
 
-// Initialize Resend at the module level for clarity.
-const resend = process.env.RESEND_API_KEY && !process.env.RESEND_API_KEY.includes('YOUR_API_KEY') 
-    ? new Resend(process.env.RESEND_API_KEY)
-    : null;
-
-if (!resend) {
-    console.warn('Resend API Key is not configured or is a placeholder. Email features will be disabled.');
-}
 
 export interface AlertData {
     symbol: string;
@@ -29,8 +21,8 @@ export interface AlertData {
 export async function sendBuySignalEmails(tokenInfo: AlertData): Promise<void> {
     console.log(`[Email Service] Received request to send email for ${tokenInfo.symbol}`);
     
-    if (!resend) {
-        console.error('[Email Service] Error: Resend is not configured. Cannot send emails.');
+    if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY.includes('YOUR_API_KEY')) {
+        console.warn('[Email Service] Error: Resend API Key is not configured or is a placeholder. Email features will be disabled.');
         return;
     }
     
@@ -40,6 +32,10 @@ export async function sendBuySignalEmails(tokenInfo: AlertData): Promise<void> {
     }
 
     try {
+        // Dynamically import Resend here to avoid issues in non-React server environments
+        const { Resend } = await import('resend');
+        const resend: Resend = new Resend(process.env.RESEND_API_KEY);
+
         const db = await getDb();
         if (!db) {
             console.error('[Email Service] Error: Database connection failed.');
