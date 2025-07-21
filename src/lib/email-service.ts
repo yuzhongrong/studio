@@ -1,7 +1,7 @@
 /**
  * @fileOverview Service for sending email notifications based on buy signals using Resend.
  */
-import type { Resend } from 'resend';
+import type { Resend as ResendType } from 'resend';
 import { getDb } from '@/lib/mongodb';
 
 
@@ -32,9 +32,8 @@ export async function sendBuySignalEmails(tokenInfo: AlertData): Promise<void> {
     }
 
     try {
-        // Dynamically import Resend here to avoid issues in non-React server environments
         const { Resend } = await import('resend');
-        const resend: Resend = new Resend(process.env.RESEND_API_KEY);
+        const resend: ResendType = new Resend(process.env.RESEND_API_KEY);
 
         const db = await getDb();
         if (!db) {
