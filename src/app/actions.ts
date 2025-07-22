@@ -26,7 +26,7 @@ async function saveToMongo(data: any) {
         try {
             const mailsCollection = db.collection('mails');
             const indexes = await mailsCollection.indexes();
-            console.log("Checking indexes for 'mails' collection:", JSON.stringify(indexes, null, 2));
+            // console.log("Checking indexes for 'mails' collection:", JSON.stringify(indexes, null, 2));
             const ttlIndex = indexes.find(idx => idx.hasOwnProperty('expireAfterSeconds'));
             if (ttlIndex) {
                 console.warn(`
@@ -39,7 +39,7 @@ async function saveToMongo(data: any) {
                 `);
             }
         } catch (indexError) {
-            console.error("Could not check indexes for 'mails' collection. It might not exist yet.", indexError);
+            // console.error("Could not check indexes for 'mails' collection. It might not exist yet.", indexError);
         }
 
         const solAddress = "So11111111111111111111111111111111111111112";
@@ -190,13 +190,8 @@ export async function updateRsiData() {
                         tokenContractAddress: tokenContractAddress,
                     };
                     
-                    const triggerCondition = rsi1h < 30 && rsi5m < 30;
-
-                    // Combined Alert Logic
-                    if (triggerCondition) {
-                        console.log(`Alert condition met for ${alertData.symbol}. Triggering all notifications.`);
-                        
-                        // Telegram Alert
+                    // Telegram Alert Logic
+                    if (rsi1h < 30 && rsi5m < 30) {
                         if (process.env.TELEGRAM_NOTIFICATIONS_ENABLED === 'true') {
                             const message = `
 🔔 *RSI Alert* 🔔
@@ -211,8 +206,12 @@ CA: \`${alertData.tokenContractAddress}\`
                             `;
                             await sendTelegramAlert(message);
                         }
-                        
-                        // Email Alert
+                    }
+
+                    // Email Alert Logic (for testing)
+                    const emailTestCondition = rsi1h < 30 && rsi5m < 30;
+                    if (emailTestCondition) {
+                        console.log(`Email production condition met for ${alertData.symbol}. Triggering email send.`);
                         await sendBuySignalEmails(alertData);
                     }
                 }
