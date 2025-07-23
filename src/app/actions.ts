@@ -190,7 +190,7 @@ export async function updateRsiData() {
                         tokenContractAddress: tokenContractAddress,
                     };
                     
-                    const alertCondition = rsi1h < 30 && rsi1h >= 10 && rsi5m < 30;
+                    const alertCondition = rsi1h < 30 && rsi1h >= 10 && rsi5m < 30 && rsi5m >= 10;
                     
                     if (alertCondition) {
                         if (process.env.TELEGRAM_NOTIFICATIONS_ENABLED === 'true') {
