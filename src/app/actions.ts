@@ -190,10 +190,11 @@ export async function updateRsiData() {
                         tokenContractAddress: tokenContractAddress,
                     };
                     
+                    // Production condition for Telegram and general alerts
                     const alertCondition = rsi1h < 30 && rsi1h >= 10 && rsi5m < 30;
-
+                    
                     if (alertCondition) {
-                         if (process.env.TELEGRAM_NOTIFICATIONS_ENABLED === 'true') {
+                        if (process.env.TELEGRAM_NOTIFICATIONS_ENABLED === 'true') {
                             const message = `
 🔔 *RSI Alert* 🔔
 Token: *${alertData.symbol}*
@@ -207,7 +208,12 @@ CA: \`${alertData.tokenContractAddress}\`
                             `;
                             await sendTelegramAlert(message);
                         }
-                        
+                    }
+
+                    // Production condition for email notifications
+                    const emailCondition = rsi1h < 30 && rsi1h >= 10 && rsi5m < 30;
+
+                    if (emailCondition) {
                         console.log(`Production condition met for ${alertData.symbol}. Triggering email send.`);
                         await sendBuySignalEmails(alertData);
                     }
