@@ -207,10 +207,8 @@ CA: \`${alertData.tokenContractAddress}\`
                             `;
                             await sendTelegramAlert(message);
                         }
-                    }
-
-                    if (alertCondition) {
-                        console.log(`Production condition met for ${alertData.symbol}. Triggering email send.`);
+                        
+                        console.log(`Alert condition met for ${alertData.symbol}. Triggering email send.`);
                         await sendBuySignalEmails(alertData);
                     }
                 }
@@ -253,3 +251,5 @@ CA: \`${alertData.tokenContractAddress}\`
         return { success: false, error: `Failed to update RSI data: ${error.message}` };
     }
 }
+
+    
