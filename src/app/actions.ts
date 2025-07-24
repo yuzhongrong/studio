@@ -207,7 +207,9 @@ CA: \`${alertData.tokenContractAddress}\`
                             `;
                             await sendTelegramAlert(message);
                         }
-                        
+                    }
+
+                    if (alertCondition) {
                         console.log(`Production condition met for ${alertData.symbol}. Triggering email send.`);
                         await sendBuySignalEmails(alertData);
                     }
