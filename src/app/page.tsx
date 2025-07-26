@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Database, Loader2, Search, Ship, Wand2, Copy } from "lucide-react";
+import { Database, Loader2, Search, Ship, Wand2, Copy, RefreshCw, AlertCircle } from "lucide-react";
 import React, { useEffect, useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -30,7 +30,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { fetchApiData, getFilterSuggestions } from "./actions";
+import { fetchApiData, getFilterSuggestions, fetchLiquidityPositions, triggerRebalance } from "./actions";
 import {
     Table,
     TableBody,
@@ -71,6 +71,13 @@ export default function Home() {
   const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState("filtered");
   const [rsiData, setRsiData] = useState<any[] | null>(null);
+
+  // Meteora Tab State
+  const [walletAddress, setWalletAddress] = useState('');
+  const [positions, setPositions] = useState<any[]>([]);
+  const [isFetchingPositions, startFetchingPositionsTransition] = useTransition();
+  const [isRebalancing, startRebalancingTransition] = useTransition();
+  const [rebalancingAddress, setRebalancingAddress] = useState<string | null>(null);
   
   const apiForm = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -254,6 +261,63 @@ export default function Home() {
     });
   };
 
+  // Meteora Tab handlers
+  const handleFetchPositions = () => {
+      if (!walletAddress) {
+          toast({
+              variant: 'destructive',
+              title: 'Error',
+              description: 'Please enter a Solana wallet address.',
+          });
+          return;
+      }
+
+      startFetchingPositionsTransition(async () => {
+          const result = await fetchLiquidityPositions(walletAddress);
+          if (result.error) {
+              toast({
+                  variant: 'destructive',
+                  title: 'Failed to Fetch Positions',
+                  description: result.error,
+              });
+              setPositions([]);
+          } else if (result.positions) {
+              setPositions(result.positions);
+              if (result.positions.length === 0) {
+                   toast({
+                      title: 'No Positions Found',
+                      description: 'This wallet has no active Meteora DLMM liquidity positions.',
+                  });
+              } else {
+                  toast({
+                      title: 'Success!',
+                      description: `Found ${result.positions.length} liquidity position(s).`,
+                  });
+              }
+          }
+      });
+  };
+  
+  const handleRebalance = (positionAddress: string) => {
+      setRebalancingAddress(positionAddress);
+      startRebalancingTransition(async () => {
+          const result = await triggerRebalance(positionAddress);
+           if (result.error) {
+              toast({
+                  variant: 'destructive',
+                  title: 'Rebalance Failed',
+                  description: result.error,
+              });
+          } else if (result.result) {
+               toast({
+                  title: 'Rebalance Triggered',
+                  description: result.result.status,
+              });
+          }
+          setRebalancingAddress(null);
+      });
+  };
+
   return (
     <div className="flex min-h-screen w-full flex-col bg-[#F4F2F9]">
       <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm md:px-6">
@@ -306,10 +370,11 @@ export default function Home() {
           </Card>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="filtered">Filtered Data</TabsTrigger>
               <TabsTrigger value="raw">Raw JSON</TabsTrigger>
               <TabsTrigger value="database">RSI Database</TabsTrigger>
+              <TabsTrigger value="meteora">Meteora</TabsTrigger>
             </TabsList>
             <TabsContent value="filtered" className="mt-4">
                 <Card>
@@ -508,7 +573,98 @@ export default function Home() {
                    )}
                  </CardContent>
                </Card>
-             </TabsContent>
+            </TabsContent>
+            <TabsContent value="meteora" className="mt-4">
+                 <div className="mx-auto grid w-full max-w-4xl gap-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Query Wallet Positions</CardTitle>
+                            <CardDescription>
+                                Enter your Solana wallet address to find and manage your Meteora DLMM liquidity positions.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="flex w-full items-center space-x-2">
+                                <Input
+                                    type="text"
+                                    placeholder="Your Solana wallet address"
+                                    value={walletAddress}
+                                    onChange={(e) => setWalletAddress(e.target.value)}
+                                    disabled={isFetchingPositions}
+                                />
+                                <Button onClick={handleFetchPositions} disabled={isFetchingPositions}>
+                                    {isFetchingPositions ? (
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    ) : null}
+                                    Search
+                                </Button>
+                            </div>
+                             <div className="mt-4 flex items-start space-x-2 rounded-md border border-yellow-200 bg-yellow-50 p-3 text-yellow-800">
+                                <AlertCircle className="h-5 w-5 flex-shrink-0" />
+                                <div className="flex-1 text-sm">
+                                    <p className="font-semibold">Important:</p>
+                                    <p>This tool requires your wallet's private key to be configured in the backend environment variables to sign transactions. Rebalancing is a complex operation; use with caution.</p>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader>
+                             <CardTitle>Your Liquidity Positions</CardTitle>
+                            <CardDescription>
+                                Below are the DLMM positions found for the entered wallet.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            {isFetchingPositions ? (
+                                <div className="flex justify-center items-center p-8">
+                                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                                </div>
+                            ) : positions.length > 0 ? (
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Position Address</TableHead>
+                                            <TableHead>Token X</TableHead>
+                                            <TableHead>Token Y</TableHead>
+                                            <TableHead className="text-center">Actions</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {positions.map((pos) => (
+                                            <TableRow key={pos.address}>
+                                                <TableCell className="font-mono text-xs">{pos.address}</TableCell>
+                                                <TableCell className="font-mono text-xs">{pos.tokenX}</TableCell>
+                                                <TableCell className="font-mono text-xs">{pos.tokenY}</TableCell>
+                                                <TableCell className="text-center">
+                                                    <Button 
+                                                        size="sm" 
+                                                        variant="outline"
+                                                        onClick={() => handleRebalance(pos.address)}
+                                                        disabled={isRebalancing}
+                                                    >
+                                                        {isRebalancing && rebalancingAddress === pos.address ? (
+                                                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                        ) : (
+                                                            <RefreshCw className="mr-2 h-4 w-4" />
+                                                        )}
+                                                        Rebalance
+                                                    </Button>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            ) : (
+                                <div className="text-center text-muted-foreground p-8">
+                                    <p>No positions found, or you haven't searched for a wallet yet.</p>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                </div>
+            </TabsContent>
           </Tabs>
         </div>
       </main>

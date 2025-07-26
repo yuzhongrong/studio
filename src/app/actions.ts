@@ -5,6 +5,11 @@ import { getDb } from '@/lib/mongodb';
 import { fetchOkxCandles, calculateRSI } from '@/lib/okx-service';
 import { sendTelegramAlert } from '@/lib/telegram-service';
 import { sendBuySignalEmails } from '@/lib/email-service';
+import { 
+    getLiquidityPositions as getPositions,
+    rebalancePosition as rebalance
+} from '@/lib/meteora-service';
+
 
 function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -248,4 +253,39 @@ CA: \`${alertData.tokenContractAddress}\`
     }
 }
 
+/**
+ * Fetches liquidity positions for a given wallet address.
+ * @param walletAddress The wallet address to query.
+ * @returns An object containing the positions or an error message.
+ */
+export async function fetchLiquidityPositions(walletAddress: string) {
+    if (!walletAddress) {
+        return { error: 'Please provide a valid wallet address.' };
+    }
+    try {
+        const positions = await getPositions(walletAddress);
+        return { positions };
+    } catch (error: any) {
+        console.error("Server action error in fetchLiquidityPositions:", error);
+        return { error: error.message };
+    }
+}
+
+/**
+ * Triggers the rebalancing process for a specific position.
+ * @param positionAddress The address of the liquidity position to rebalance.
+ * @returns An object containing the result of the rebalancing operation or an error message.
+ */
+export async function triggerRebalance(positionAddress: string) {
+     if (!positionAddress) {
+        return { error: 'Please provide a valid position address.' };
+    }
+    try {
+        const result = await rebalance(positionAddress);
+        return { result };
+    } catch (error: any) {
+        console.error("Server action error in triggerRebalance:", error);
+        return { error: error.message };
+    }
+}
     
