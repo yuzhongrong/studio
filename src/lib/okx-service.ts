@@ -71,7 +71,7 @@ export function calculateRSI(closePrices: number[], period: number = 14): number
  * @param limit The number of candles to retrieve.
  * @returns A promise that resolves to an object containing parsed and raw data.
  */
-export async function fetchOkxCandles(tokenAddress: string, bar: '5m' | '1H', limit: number): Promise<{ parsedData: Candle[], rawData: any }> {
+export async function fetchOkxCandles(tokenAddress: string, bar: '5m' | '1H', limit: number): Promise<{ parsedData: Candle[] }> {
     const OKX_API_KEY = process.env.OK_ACCESS_KEY;
     const OKX_PASSPHRASE = process.env.OK_ACCESS_PASSPHRASE;
 
@@ -101,7 +101,7 @@ export async function fetchOkxCandles(tokenAddress: string, bar: '5m' | '1H', li
     }
 
     if (!jsonResponse.data || !Array.isArray(jsonResponse.data)) {
-        return { parsedData: [], rawData: [] };
+        return { parsedData: [] };
     }
     
     const parsedData = jsonResponse.data.map((d: string[]) => ({
@@ -113,5 +113,5 @@ export async function fetchOkxCandles(tokenAddress: string, bar: '5m' | '1H', li
         volume: parseFloat(d[5]),
     }));
     
-    return { parsedData, rawData: jsonResponse.data };
+    return { parsedData };
 }

@@ -173,7 +173,7 @@ export async function updateRsiData() {
                     continue;
                 }
 
-                const { parsedData: candles5m, rawData: raw5m } = await fetchOkxCandles(tokenContractAddress, '5m', 200);
+                const { parsedData: candles5m } = await fetchOkxCandles(tokenContractAddress, '5m', 200);
                 await sleep(1000);
                 const { parsedData: candles1h } = await fetchOkxCandles(tokenContractAddress, '1H', 200);
                 
