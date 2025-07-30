@@ -214,7 +214,6 @@ CA: \`${alertData.tokenContractAddress}\`
                     tokenContractAddress: tokenContractAddress,
                     'rsi-5m': rsi5m,
                     'rsi-1h': rsi1h,
-                    'rsi_200_5m': raw5m,
                     symbol: pair.baseToken?.symbol,
                     priceChange: pair.priceChange,
                     marketCap: pair.marketCap,
