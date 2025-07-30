@@ -223,7 +223,10 @@ CA: \`${alertData.tokenContractAddress}\`
                 
                 await rsiCollection.updateOne(
                     { tokenContractAddress: tokenContractAddress },
-                    { $set: rsiDataToSave },
+                    { 
+                      $set: rsiDataToSave,
+                      $unset: { rsi_200_1h: "" } 
+                    },
                     { upsert: true }
                 );
                 updatedCount++;
@@ -246,4 +249,6 @@ CA: \`${alertData.tokenContractAddress}\`
         return { success: false, error: `Failed to update RSI data: ${error.message}` };
     }
 }
+    
+
     
