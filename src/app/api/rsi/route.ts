@@ -8,6 +8,7 @@ export async function GET() {
     !process.env.MONGO_URI ||
     process.env.MONGO_URI.includes('YOUR_CONNECTION_STRING')
   ) {
+    console.error('API Error: MongoDB URI is not configured.');
     return NextResponse.json(
       { error: 'MongoDB is not configured.' },
       { status: 500 }
@@ -17,6 +18,7 @@ export async function GET() {
   try {
     const db = await getDb();
     if (!db) {
+      console.error('API Error: Database connection failed. getDb() returned null.');
       return NextResponse.json(
         { error: 'Database connection failed.' },
         { status: 500 }
@@ -26,11 +28,13 @@ export async function GET() {
     const collection = db.collection('rsi_data');
     const data = await collection.find({}).toArray();
 
+    // Ensure _id is serialized to a string for JSON transport
     const serializableData = data.map((item) => ({
       ...item,
       _id: item._id.toString(),
     }));
 
+    // Return data with cache-control headers to prevent caching
     return NextResponse.json(serializableData, {
       status: 200,
       headers: {
