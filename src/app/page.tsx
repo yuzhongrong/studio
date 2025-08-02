@@ -245,6 +245,11 @@ export default function Home() {
     if (marketCap >= 1_000) return `${(marketCap / 1_000).toFixed(2)}K`;
     return marketCap.toFixed(2);
   };
+
+  const formatPrice = (price: number) => {
+    if (!price) return 'N/A';
+    return price.toPrecision(4);
+  }
   
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text).then(() => {
@@ -454,6 +459,7 @@ export default function Home() {
                                 <TableRow>
                                     <TableHead>Symbol</TableHead>
                                     <TableHead>Contract</TableHead>
+                                    <TableHead className="text-right">Price</TableHead>
                                     <TableHead className="text-right">RSI (1H)</TableHead>
                                     <TableHead className="text-right">RSI (5m)</TableHead>
                                     <TableHead className="text-right">Price Change (24h)</TableHead>
@@ -482,6 +488,7 @@ export default function Home() {
                                                 </Tooltip>
                                             </div>
                                         </TableCell>
+                                        <TableCell className="text-right font-mono">${formatPrice(item.current_price)}</TableCell>
                                         <TableCell className={`text-right font-semibold ${item['rsi-1h'] > 70 ? 'text-destructive' : item['rsi-1h'] < 30 ? 'text-green-600' : ''}`}>
                                             {item['rsi-1h'] ? item['rsi-1h'].toFixed(2) : 'N/A'}
                                         </TableCell>

@@ -179,6 +179,7 @@ export async function updateRsiData() {
                 
                 const rsi5m = calculateRSI(candles5m.map(c => c.close));
                 const rsi1h = calculateRSI(candles1h.map(c => c.close));
+                const currentPrice = candles5m && candles5m.length > 0 ? candles5m[0].close : null;
                 
                 if (rsi1h && rsi5m) {
                     const marketCapFormatted = formatMarketCap(pair.marketCap);
@@ -214,6 +215,7 @@ CA: \`${alertData.tokenContractAddress}\`
                     tokenContractAddress: tokenContractAddress,
                     'rsi-5m': rsi5m,
                     'rsi-1h': rsi1h,
+                    current_price: currentPrice,
                     symbol: pair.baseToken?.symbol,
                     priceChange: pair.priceChange,
                     marketCap: pair.marketCap,
@@ -252,3 +254,4 @@ CA: \`${alertData.tokenContractAddress}\`
     
 
     
+
