@@ -59,3 +59,22 @@ export async function getDb(): Promise<Db | null> {
         return null;
     }
 }
+
+export async function createTtlIndex() {
+  const db = await getDb();
+  if (!db) {
+    console.error('Cannot create TTL index because database connection is not available.');
+    return;
+  }
+  try {
+    const pairsCollection = db.collection('pairs');
+    // Index ensures that documents are automatically removed from a collection after a certain amount of time
+    await pairsCollection.createIndex(
+      { "lastUpdated": 1 },
+      { expireAfterSeconds: 86400 } // 24 hours
+    );
+    console.log("TTL index on 'pairs' collection for 'lastUpdated' field ensured.");
+  } catch (error) {
+    console.error("Failed to create TTL index:", error);
+  }
+}

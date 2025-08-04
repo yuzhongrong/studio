@@ -56,7 +56,7 @@ async function saveToMongo(data: any) {
                     return {
                         replaceOne: {
                             filter: { _id: item.pairAddress },
-                            replacement: { ...item, _id: item.pairAddress },
+                            replacement: { ...item, _id: item.pairAddress, lastUpdated: new Date() },
                             upsert: true,
                         },
                     };
@@ -254,4 +254,5 @@ CA: \`${alertData.tokenContractAddress}\`
     
 
     
+
 
