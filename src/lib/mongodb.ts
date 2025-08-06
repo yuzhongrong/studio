@@ -67,13 +67,22 @@ export async function createTtlIndex() {
     return;
   }
   try {
+    // TTL index for 'pairs' collection
     const pairsCollection = db.collection('pairs');
-    // Index ensures that documents are automatically removed from a collection after a certain amount of time
     await pairsCollection.createIndex(
       { "lastUpdated": 1 },
       { expireAfterSeconds: 86400 } // 24 hours
     );
     console.log("TTL index on 'pairs' collection for 'lastUpdated' field ensured.");
+
+    // TTL index for 'rsi_data' collection
+    const rsiDataCollection = db.collection('rsi_data');
+    await rsiDataCollection.createIndex(
+        { "lastUpdated": 1 },
+        { expireAfterSeconds: 86400 } // 24 hours
+    );
+    console.log("TTL index on 'rsi_data' collection for 'lastUpdated' field ensured.");
+
   } catch (error) {
     console.error("Failed to create TTL index:", error);
   }
