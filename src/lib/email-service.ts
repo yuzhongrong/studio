@@ -43,12 +43,14 @@ export async function sendBuySignalEmails(tokenInfo: AlertData): Promise<void> {
 
         const mailsCollection = db.collection('mails');
         const activeSubscribers = await mailsCollection.find({ status: 'active' }).toArray();
-        console.log(`[Email Service] Found ${activeSubscribers.length} active subscribers in the database.`);
+        
 
         if (activeSubscribers.length === 0) {
-            console.log('[Email Service] No active subscribers to email. Exiting.');
+            console.log('[Email Service] No active subscribers found in the database. Skipping email send.');
             return;
         }
+        
+        console.log(`[Email Service] Found ${activeSubscribers.length} active subscribers. Preparing email batch.`);
 
         const emailSubject = `🔔 RSI Alert: Buy Signal for ${tokenInfo.symbol}`;
         const emailHtmlBody = `
@@ -77,7 +79,7 @@ export async function sendBuySignalEmails(tokenInfo: AlertData): Promise<void> {
             html: emailHtmlBody,
         }));
         
-        console.log(`[Email Service] Prepared a batch of ${emailBatch.length} emails. Attempting to send...`);
+        console.log(`[Email Service] Attempting to send a batch of ${emailBatch.length} emails...`);
         
         const { data, error } = await resend.batch.send(emailBatch);
 
@@ -86,8 +88,11 @@ export async function sendBuySignalEmails(tokenInfo: AlertData): Promise<void> {
             return;
         }
 
-        console.log(`[Email Service] Resend API call successful. Response data:`, JSON.stringify(data, null, 2));
-        console.log(`[Email Service] Successfully queued ${data?.created_at ? emailBatch.length : 0} emails for ${tokenInfo.symbol}.`);
+        if (data && data.data) {
+             console.log(`[Email Service] Resend API call successful. ${data.data.length} emails queued for ${tokenInfo.symbol}.`);
+        } else {
+             console.warn('[Email Service] Resend API call was successful, but no data was returned in the response.');
+        }
 
     } catch (error: any) {
         console.error('[Email Service] A critical error occurred in sendBuySignalEmails:', error);

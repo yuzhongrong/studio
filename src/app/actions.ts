@@ -22,26 +22,6 @@ async function saveToMongo(data: any) {
              return { success: true, message: 'Database not configured, skipped saving.' };
         }
         const collection = db.collection('pairs');
-        
-        // Diagnostic step: Check for TTL indexes on the 'mails' collection
-        try {
-            const mailsCollection = db.collection('mails');
-            const indexes = await mailsCollection.indexes();
-            // console.log("Checking indexes for 'mails' collection:", JSON.stringify(indexes, null, 2));
-            const ttlIndex = indexes.find(idx => idx.hasOwnProperty('expireAfterSeconds'));
-            if (ttlIndex) {
-                console.warn(`
-                ********************************************************************************
-                WARNING: TTL index found on 'mails' collection!
-                This is likely the cause of subscriptions disappearing automatically.
-                Index details: ${JSON.stringify(ttlIndex)}
-                To fix this, you need to drop this index from your MongoDB 'mails' collection.
-                ********************************************************************************
-                `);
-            }
-        } catch (indexError) {
-            // console.error("Could not check indexes for 'mails' collection. It might not exist yet.", indexError);
-        }
 
         const solAddress = "So11111111111111111111111111111111111111112";
         const usdcAddress = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
@@ -254,5 +234,6 @@ CA: \`${alertData.tokenContractAddress}\`
     
 
     
+
 
 
