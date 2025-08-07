@@ -181,9 +181,19 @@ export async function updateRsiData() {
                     
                     const alertCondition = rsi1h < 30 && rsi1h >= 10 && rsi5m < 30 && rsi5m >= 10;
                     
-                    const fiveDaysAgo = new Date();
-                    fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
-                    const isPairOldEnough = pair.pairCreatedAt && new Date(pair.pairCreatedAt as number) < fiveDaysAgo;
+                    const now = new Date();
+                    const fiveDaysAgo = new Date(now.getTime() - (5 * 24 * 60 * 60 * 1000));
+                    
+                    let isPairOldEnough = false;
+                    if (pair.pairCreatedAt) {
+                        const createdAtTimestamp = (pair.pairCreatedAt as number) * 1000;
+                        const createdAtDate = new Date(createdAtTimestamp);
+
+                        // Check if creation date is not in the future and is older than 5 days
+                        if (createdAtDate <= now && createdAtDate < fiveDaysAgo) {
+                            isPairOldEnough = true;
+                        }
+                    }
 
                     const finalAlertCondition = alertCondition && isPairOldEnough;
 
@@ -239,7 +249,11 @@ CA: \`${alertData.tokenContractAddress}\`
 
             } catch (error: any) {
                 failedCount++;
-                console.error(`Failed to process RSI for pair ${pair.pairAddress}: ${error.message}`);
+                if (pair && pair.pairAddress) {
+                    console.error(`Failed to process RSI for pair ${pair.pairAddress}: ${error.message}`);
+                } else {
+                    console.error(`Failed to process RSI for a pair: ${error.message}`);
+                }
                 await sleep(1000);
             }
         }
@@ -256,6 +270,7 @@ CA: \`${alertData.tokenContractAddress}\`
     
 
     
+
 
 
 
