@@ -186,7 +186,7 @@ export async function updateRsiData() {
                     // Add time-based condition
                     const fiveDaysAgo = new Date();
                     fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
-                    const isPairOldEnough = pair.pairCreatedAt && new Date(pair.pairCreatedAt) < fiveDaysAgo;
+                    const isPairOldEnough = pair.pairCreatedAt && new Date(pair.pairCreatedAt as number) < fiveDaysAgo;
 
                     if (alertCondition && isPairOldEnough) {
                         const message = `
@@ -249,6 +249,7 @@ CA: \`${alertData.tokenContractAddress}\`
     
 
     
+
 
 
 
