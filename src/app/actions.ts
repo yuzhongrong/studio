@@ -186,10 +186,9 @@ export async function updateRsiData() {
                     
                     let isPairOldEnough = false;
                     if (pair.pairCreatedAt) {
-                        const createdAtTimestamp = pair.pairCreatedAt as number; // Already in milliseconds
+                        const createdAtTimestamp = pair.pairCreatedAt as number;
                         const createdAtDate = new Date(createdAtTimestamp);
 
-                        // Check if creation date is not in the future and is older than 5 days
                         if (createdAtDate <= now && createdAtDate < fiveDaysAgo) {
                             isPairOldEnough = true;
                         }
@@ -270,6 +269,7 @@ CA: \`${alertData.tokenContractAddress}\`
     
 
     
+
 
 
 
