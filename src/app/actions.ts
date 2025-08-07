@@ -183,7 +183,12 @@ export async function updateRsiData() {
                     
                     const alertCondition = rsi1h < 30 && rsi1h >= 10 && rsi5m < 30 && rsi5m >= 10;
                     
-                    if (alertCondition) {
+                    // Add time-based condition
+                    const fiveDaysAgo = new Date();
+                    fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
+                    const isPairOldEnough = pair.pairCreatedAt && new Date(pair.pairCreatedAt) < fiveDaysAgo;
+
+                    if (alertCondition && isPairOldEnough) {
                         const message = `
 🔔 *RSI Alert* 🔔
 Token: *${alertData.symbol}*
@@ -244,6 +249,7 @@ CA: \`${alertData.tokenContractAddress}\`
     
 
     
+
 
 
 
