@@ -131,9 +131,11 @@ export async function updateRsiData() {
         }
         const pairsCollection = db.collection('pairs');
         const rsiCollection = db.collection('rsi_data');
-        const pairs = await pairsCollection.find({}).toArray();
+        
+        // Fetch only the IDs first to avoid stale data during the long-running loop.
+        const pairIds = await pairsCollection.find({}, { projection: { _id: 1 } }).toArray();
 
-        if (pairs.length === 0) {
+        if (pairIds.length === 0) {
             return { success: true, message: "No pairs in database to process." };
         }
 
@@ -141,8 +143,15 @@ export async function updateRsiData() {
         let updatedCount = 0;
         let failedCount = 0;
 
-        for (const pair of pairs) {
+        for (const pairIdDoc of pairIds) {
             try {
+                // Fetch the fresh pair data inside the loop
+                const pair = await pairsCollection.findOne({ _id: pairIdDoc._id });
+                if (!pair) {
+                    console.warn(`Could not find pair with ID ${pairIdDoc._id}, it might have been deleted.`);
+                    continue;
+                }
+
                 let tokenContractAddress = pair.baseToken?.address;
                 if (tokenContractAddress === solAddress) {
                     tokenContractAddress = pair.quoteToken?.address;
@@ -234,6 +243,7 @@ CA: \`${alertData.tokenContractAddress}\`
     
 
     
+
 
 
 
