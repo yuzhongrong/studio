@@ -464,6 +464,7 @@ export default function Home() {
                                     <TableHead className="text-right">RSI (5m)</TableHead>
                                     <TableHead className="text-right">Price Change (24h)</TableHead>
                                     <TableHead className="text-right">Market Cap</TableHead>
+                                    <TableHead className="text-right">Pair Created</TableHead>
                                     <TableHead className="text-right">Last Updated</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -499,6 +500,9 @@ export default function Home() {
                                             {item.priceChange?.h24 ? `${item.priceChange.h24.toFixed(2)}%` : 'N/A'}
                                         </TableCell>
                                         <TableCell className="text-right">{formatMarketCap(item.marketCap)}</TableCell>
+                                        <TableCell className="text-right text-muted-foreground">
+                                            {item.pairCreatedAt ? format(new Date(item.pairCreatedAt), "yyyy-MM-dd HH:mm") : 'N/A'}
+                                        </TableCell>
                                         <TableCell className="text-right text-muted-foreground">
                                             {item.lastUpdated ? format(new Date(item.lastUpdated), "HH:mm:ss") : 'N/A'}
                                         </TableCell>

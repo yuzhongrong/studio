@@ -208,6 +208,7 @@ CA: \`${alertData.tokenContractAddress}\`
                     symbol: pair.baseToken?.symbol,
                     priceChange: pair.priceChange,
                     marketCap: pair.marketCap,
+                    pairCreatedAt: pair.pairCreatedAt,
                     info: pair.info,
                     lastUpdated: new Date()
                 };
@@ -243,6 +244,7 @@ CA: \`${alertData.tokenContractAddress}\`
     
 
     
+
 
 
 
