@@ -7,18 +7,20 @@ export async function sendTelegramAlert(message: string): Promise<{ ok: boolean;
   const chatId = process.env.TELEGRAM_CHAT_ID;
 
   if (process.env.TELEGRAM_NOTIFICATIONS_ENABLED !== 'true') {
-    return { ok: true }; // Notifications are disabled, do nothing.
+    console.log('[Telegram Service] Notifications are disabled via environment variable. Skipping.');
+    return { ok: true }; 
   }
 
   if (!botToken || !chatId) {
     const errorMsg = 'Telegram bot token or chat ID is not configured in environment variables.';
-    console.error(errorMsg);
+    console.error(`[Telegram Service] Error: ${errorMsg}`);
     return { ok: false, error: errorMsg };
   }
 
   const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
 
   try {
+    console.log(`[Telegram Service] Sending message to chat ID ${chatId}...`);
     const response = await fetch(url, {
       method: 'POST',
       headers: {
@@ -34,15 +36,15 @@ export async function sendTelegramAlert(message: string): Promise<{ ok: boolean;
     if (!response.ok) {
       const errorData = await response.json();
       const errorMsg = `Telegram API error: ${errorData.description || response.statusText}`;
-      console.error(errorMsg, errorData);
+      console.error(`[Telegram Service] Error: ${errorMsg}`, errorData);
       return { ok: false, error: errorMsg };
     }
     
-    console.log(`Successfully sent Telegram alert for chat ID ${chatId}.`);
+    console.log(`[Telegram Service] Successfully sent alert to chat ID ${chatId}.`);
     return { ok: true };
 
   } catch (error: any) {
-    console.error('Failed to send Telegram message:', error);
+    console.error('[Telegram Service] Failed to send message due to a network or other error:', error);
     return { ok: false, error: error.message };
   }
 }

@@ -132,7 +132,6 @@ export async function updateRsiData() {
         const pairsCollection = db.collection('pairs');
         const rsiCollection = db.collection('rsi_data');
         
-        // Fetch only the IDs first to avoid stale data during the long-running loop.
         const pairIds = await pairsCollection.find({}, { projection: { _id: 1 } }).toArray();
 
         if (pairIds.length === 0) {
@@ -145,7 +144,6 @@ export async function updateRsiData() {
 
         for (const pairIdDoc of pairIds) {
             try {
-                // Fetch the fresh pair data inside the loop
                 const pair = await pairsCollection.findOne({ _id: pairIdDoc._id });
                 if (!pair) {
                     console.warn(`Could not find pair with ID ${pairIdDoc._id}, it might have been deleted.`);
@@ -183,12 +181,16 @@ export async function updateRsiData() {
                     
                     const alertCondition = rsi1h < 30 && rsi1h >= 10 && rsi5m < 30 && rsi5m >= 10;
                     
-                    // Add time-based condition
                     const fiveDaysAgo = new Date();
                     fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
                     const isPairOldEnough = pair.pairCreatedAt && new Date(pair.pairCreatedAt as number) < fiveDaysAgo;
 
-                    if (alertCondition && isPairOldEnough) {
+                    const finalAlertCondition = alertCondition && isPairOldEnough;
+
+                    console.log(`[Alert Check] For ${alertData.symbol}: RSI condition met: ${alertCondition}, Is pair old enough: ${isPairOldEnough}. Final decision: ${finalAlertCondition}`);
+
+                    if (finalAlertCondition) {
+                        console.log(`[Notification] Triggering alerts for ${alertData.symbol}`);
                         const message = `
 🔔 *RSI Alert* 🔔
 Token: *${alertData.symbol}*
@@ -200,8 +202,13 @@ CA: \`${alertData.tokenContractAddress}\`
 
 [View on GMGN](https://gmgn.ai/sol/token/${alertData.tokenContractAddress})
                         `;
+                        
+                        console.log(`[Notification] Preparing to send Telegram alert for ${alertData.symbol}.`);
                         await sendTelegramAlert(message);
+                        
+                        console.log(`[Notification] Preparing to send email alerts for ${alertData.symbol}.`);
                         await sendBuySignalEmails(alertData);
+                        console.log(`[Notification] All alerts for ${alertData.symbol} have been processed.`);
                     }
                 }
 
@@ -249,6 +256,7 @@ CA: \`${alertData.tokenContractAddress}\`
     
 
     
+
 
 
 

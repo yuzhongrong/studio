@@ -67,6 +67,7 @@ export async function sendBuySignalEmails(tokenInfo: AlertData): Promise<void> {
         `;
         const fromAddress = 'Pumpwatch Signals <signals@pumpwatch.virtualchats.xyz>';
 
+        console.log(`[Email Service] Sending email to ${recipientEmails.length} recipients...`);
         const response = await fetch('https://api.resend.com/emails', {
             method: 'POST',
             headers: {
