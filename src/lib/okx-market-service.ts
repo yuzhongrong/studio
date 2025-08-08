@@ -26,8 +26,12 @@ function getTimestamp() {
     return new Date().toISOString().slice(0, -5) + 'Z';
 }
 
-function preHash(timestamp: string, method: string, requestPath: string, body: string) {
-    return timestamp + method + requestPath + body;
+function preHash(timestamp: string, method: string, requestPath: string, body: object | null) {
+    let bodyStr = '';
+    if (body) {
+        bodyStr = JSON.stringify(body);
+    }
+    return timestamp + method + requestPath + bodyStr;
 }
 
 function sign(message: string, secret: string) {
@@ -41,20 +45,20 @@ function sign(message: string, secret: string) {
  * @returns A promise that resolves to an array of market data objects.
  */
 export async function fetchOkxMarketData(tokenContractAddresses: string[]): Promise<MarketData[]> {
-    // Hardcoded credentials for debugging.
-    const OKX_API_KEY = '73b6baca-5b81-4cb0-b263-7eacea0f064a';
+    const OKX_API_KEY = '9a31548a-6b3a-4f5c-89b5-78d1f7e0349b';
     const OKX_SECRET_KEY = 'ECD61FCC9D17DDA622FB4FA19D11C096';
-    const OKX_PASSPHRASE = 'Abc5341842...';
-
+    const OKX_PASSPHRASE = 'shuai1999';
+    
     const requestPath = '/api/v5/dex/market/price-info';
     const method = 'POST';
-    const body = JSON.stringify({
+    const bodyParams = {
         chainIndex: "501",
         tokenContractAddress: tokenContractAddresses
-    });
+    };
     
     const timestamp = getTimestamp();
-    const signature = sign(preHash(timestamp, method, requestPath, body), OKX_SECRET_KEY);
+    const message = preHash(timestamp, method, requestPath, bodyParams);
+    const signature = sign(message, OKX_SECRET_KEY);
 
     const url = `https://web3.okx.com${requestPath}`;
 
@@ -71,15 +75,15 @@ export async function fetchOkxMarketData(tokenContractAddresses: string[]): Prom
     console.log(`[MarketCap Task] Request URL: ${url}`);
     console.log(`[MarketCap Task] Request Method: ${method}`);
     console.log('[MarketCap Task] Request Headers:', JSON.stringify(headers, null, 2));
-    console.log('[MarketCap Task] Request Body:', body);
+    console.log('[MarketCap Task] Request Body:', JSON.stringify(bodyParams));
     // --- END DEBUG LOGGING ---
 
-
-    const response = await fetch(url, { method, headers, body, cache: 'no-store' });
+    const response = await fetch(url, { method, headers, body: JSON.stringify(bodyParams), cache: 'no-store' });
     
     if (!response.ok) {
-        const errorBody = await response.text();
-        throw new Error(`OKX Market API request failed with status ${response.status}: ${errorBody}`);
+        const errorBody = await response.json();
+        console.error('[MarketCap Task] OKX API Error Response:', JSON.stringify(errorBody, null, 2));
+        throw new Error(`OKX Market API request failed with status ${response.status}: ${errorBody.msg} (code: ${errorBody.code})`);
     }
 
     const jsonResponse = await response.json();
