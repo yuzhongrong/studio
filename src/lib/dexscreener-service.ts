@@ -76,6 +76,7 @@ export async function fetchPairData(pairAddress: string): Promise<DexScreenerPai
     const url = `https://api.dexscreener.com/latest/dex/pairs/solana/${pairAddress}`;
 
     try {
+        console.log(`[DexScreener Service] Fetching data from: ${url}`);
         const response = await fetch(url, { cache: 'no-store' });
 
         if (!response.ok) {
