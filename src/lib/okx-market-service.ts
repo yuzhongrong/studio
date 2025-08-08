@@ -41,9 +41,9 @@ function sign(message: string, secret: string) {
  * @returns A promise that resolves to an array of market data objects.
  */
 export async function fetchOkxMarketData(tokens: string[]): Promise<MarketData[]> {
-    const OKX_API_KEY = process.env.OK_ACCESS_KEY;
-    const OKX_SECRET_KEY = process.env.OK_SECRET_KEY;
-    const OKX_PASSPHRASE = process.env.OK_ACCESS_PASSPHRASE;
+    const OKX_API_KEY = '73b6baca-5b81-4cb0-b263-7eacea0f064a';
+    const OKX_SECRET_KEY = 'ECD61FCC9D17DDA622FB4FA19D11C096';
+    const OKX_PASSPHRASE = 'Abc5341842';
 
     if (!OKX_API_KEY || !OKX_SECRET_KEY || !OKX_PASSPHRASE) {
         throw new Error('Missing OKX API credentials in environment variables.');
@@ -83,12 +83,13 @@ export async function fetchOkxMarketData(tokens: string[]): Promise<MarketData[]
 
     if (!response.ok) {
         console.error('[MarketCap Task] OKX API Error Response:', JSON.stringify(responseBody, null, 2));
-        throw new Error(`OKX Market API request failed with status ${response.status}: ${responseBody.msg} (code: ${responseBody.code})`);
+        throw new Error(`OKX Market API request failed with status ${response.status}: ${responseBody.msg || 'No error message'} (code: ${responseBody.code || 'N/A'})`);
     }
 
     if (responseBody.code !== '0') {
-        console.error(`OKX Market API returned an error: ${responseBody.msg} (code: ${responseBody.code})`);
-        throw new Error(`OKX Market API returned an error: ${responseBody.msg} (code: ${responseBody.code})`);
+        const errorMsg = `OKX Market API returned an error: ${responseBody.msg} (code: ${responseBody.code})`;
+        console.error(errorMsg);
+        throw new Error(errorMsg);
     }
 
     if (!responseBody.data || !Array.isArray(responseBody.data)) {
