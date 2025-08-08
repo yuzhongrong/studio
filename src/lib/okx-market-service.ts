@@ -1,3 +1,4 @@
+
 /**
  * @fileOverview Service for fetching OKX market data (price, market cap).
  * This service handles API signing as required by OKX.
@@ -21,17 +22,19 @@ export interface MarketData {
     volume5M: string;
 }
 
+export type MarketDataPayload = {
+    chainIndex: string;
+    tokenContractAddress: string;
+}[];
+
+
 function getTimestamp() {
     // OKX API requires timestamp in ISO8601 format without milliseconds.
     return new Date().toISOString().slice(0, -5) + 'Z';
 }
 
-function preHash(timestamp: string, method: string, requestPath: string, body: object | null) {
-    let bodyStr = '';
-    if (body) {
-        bodyStr = JSON.stringify(body);
-    }
-    return timestamp + method + requestPath + bodyStr;
+function preHash(timestamp: string, method: string, requestPath: string, body: string) {
+    return timestamp + method + requestPath + body;
 }
 
 function sign(message: string, secret: string) {
@@ -41,23 +44,24 @@ function sign(message: string, secret: string) {
 
 /**
  * Fetches market data from OKX API for a specific list of tokens.
- * @param tokenContractAddresses An array of token contract addresses.
+ * @param tokens An array of token objects, each with a chainIndex and tokenContractAddress.
  * @returns A promise that resolves to an array of market data objects.
  */
-export async function fetchOkxMarketData(tokenContractAddresses: string[]): Promise<MarketData[]> {
+export async function fetchOkxMarketData(tokens: MarketDataPayload): Promise<MarketData[]> {
     const OKX_API_KEY = '9a31548a-6b3a-4f5c-89b5-78d1f7e0349b';
     const OKX_SECRET_KEY = 'ECD61FCC9D17DDA622FB4FA19D11C096';
     const OKX_PASSPHRASE = 'shuai1999';
+
+    if (!OKX_API_KEY || !OKX_SECRET_KEY || !OKX_PASSPHRASE) {
+        throw new Error('Missing OKX API credentials.');
+    }
     
-    const requestPath = '/api/v5/dex/market/price-info';
+    const requestPath = '/api/v5/dex/market/price';
     const method = 'POST';
-    const bodyParams = {
-        chainIndex: "501",
-        tokenContractAddress: tokenContractAddresses
-    };
+    const bodyString = JSON.stringify(tokens);
     
     const timestamp = getTimestamp();
-    const message = preHash(timestamp, method, requestPath, bodyParams);
+    const message = preHash(timestamp, method, requestPath, bodyString);
     const signature = sign(message, OKX_SECRET_KEY);
 
     const url = `https://web3.okx.com${requestPath}`;
@@ -69,16 +73,15 @@ export async function fetchOkxMarketData(tokenContractAddresses: string[]): Prom
         'OK-ACCESS-PASSPHRASE': OKX_PASSPHRASE,
         'Content-Type': 'application/json',
     };
-
-    // --- DEBUG LOGGING ---
+    
     console.log('[MarketCap Task] Preparing OKX API Request...');
     console.log(`[MarketCap Task] Request URL: ${url}`);
     console.log(`[MarketCap Task] Request Method: ${method}`);
     console.log('[MarketCap Task] Request Headers:', JSON.stringify(headers, null, 2));
-    console.log('[MarketCap Task] Request Body:', JSON.stringify(bodyParams));
-    // --- END DEBUG LOGGING ---
+    console.log('[MarketCap Task] Request Body:', bodyString);
 
-    const response = await fetch(url, { method, headers, body: JSON.stringify(bodyParams), cache: 'no-store' });
+
+    const response = await fetch(url, { method, headers, body: bodyString, cache: 'no-store' });
     
     if (!response.ok) {
         const errorBody = await response.json();
