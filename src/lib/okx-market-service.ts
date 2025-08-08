@@ -29,8 +29,8 @@ export type MarketDataPayload = {
 
 
 function getTimestamp() {
-    // OKX API requires timestamp in ISO8601 format without milliseconds.
-    return new Date().toISOString().slice(0, -5) + 'Z';
+    // OKX API requires timestamp in ISO8601 format with milliseconds.
+    return new Date().toISOString();
 }
 
 function preHash(timestamp: string, method: string, requestPath: string, body: string) {
@@ -48,12 +48,12 @@ function sign(message: string, secret: string) {
  * @returns A promise that resolves to an array of market data objects.
  */
 export async function fetchOkxMarketData(tokens: MarketDataPayload): Promise<MarketData[]> {
-    const OKX_API_KEY = '9a31548a-6b3a-4f5c-89b5-78d1f7e0349b';
-    const OKX_SECRET_KEY = 'ECD61FCC9D17DDA622FB4FA19D11C096';
-    const OKX_PASSPHRASE = 'shuai1999';
+    const OKX_API_KEY = process.env.OK_ACCESS_KEY;
+    const OKX_SECRET_KEY = process.env.OK_SECRET_KEY;
+    const OKX_PASSPHRASE = process.env.OK_ACCESS_PASSPHRASE;
 
     if (!OKX_API_KEY || !OKX_SECRET_KEY || !OKX_PASSPHRASE) {
-        throw new Error('Missing OKX API credentials.');
+        throw new Error('Missing OKX API credentials in environment variables.');
     }
     
     const requestPath = '/api/v5/dex/market/price';
@@ -83,21 +83,20 @@ export async function fetchOkxMarketData(tokens: MarketDataPayload): Promise<Mar
 
     const response = await fetch(url, { method, headers, body: bodyString, cache: 'no-store' });
     
+    const responseBody = await response.json();
+
     if (!response.ok) {
-        const errorBody = await response.json();
-        console.error('[MarketCap Task] OKX API Error Response:', JSON.stringify(errorBody, null, 2));
-        throw new Error(`OKX Market API request failed with status ${response.status}: ${errorBody.msg} (code: ${errorBody.code})`);
+        console.error('[MarketCap Task] OKX API Error Response:', JSON.stringify(responseBody, null, 2));
+        throw new Error(`OKX Market API request failed with status ${response.status}: ${responseBody.msg} (code: ${responseBody.code})`);
     }
 
-    const jsonResponse = await response.json();
-
-    if (jsonResponse.code !== '0') {
-        throw new Error(`OKX Market API returned an error: ${jsonResponse.msg} (code: ${jsonResponse.code})`);
+    if (responseBody.code !== '0') {
+        throw new Error(`OKX Market API returned an error: ${responseBody.msg} (code: ${responseBody.code})`);
     }
 
-    if (!jsonResponse.data || !Array.isArray(jsonResponse.data)) {
+    if (!responseBody.data || !Array.isArray(responseBody.data)) {
         return [];
     }
     
-    return jsonResponse.data as MarketData[];
+    return responseBody.data as MarketData[];
 }
