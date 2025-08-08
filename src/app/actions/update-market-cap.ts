@@ -2,13 +2,13 @@
 'use server';
 
 import { getDb } from '@/lib/mongodb';
-import { fetchOkxMarketData } from '@/lib/okx-market-service';
+import { fetchPairData } from '@/lib/dexscreener-service';
 
 function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-export async function updateMarketCapData() {
+export async function updatePairDataFromDexScreener() {
     if (!process.env.MONGO_URI || process.env.MONGO_URI.includes("YOUR_CONNECTION_STRING")) {
         return { success: false, error: 'MongoDB is not configured. Please set MONGO_URI in your .env file.' };
     }
@@ -20,69 +20,53 @@ export async function updateMarketCapData() {
         }
         
         const pairsCollection = db.collection('pairs');
-        // Get all unique contract addresses from the pairs collection
-        const pairs = await pairsCollection.find({}, { projection: { baseToken: 1, quoteToken: 1 } }).toArray();
-        const solAddress = "So11111111111111111111111111111111111111112";
+        // Get all pair addresses from the pairs collection
+        const pairs = await pairsCollection.find({}, { projection: { _id: 1 } }).toArray();
+        const pairAddresses = pairs.map(p => p._id);
 
-        const allContractAddresses = pairs.map(p => {
-            return p.baseToken?.address === solAddress ? p.quoteToken?.address : p.baseToken?.address;
-        }).filter((addr): addr is string => !!addr);
-
-        if (allContractAddresses.length === 0) {
-            return { success: true, message: "No pairs in database to process for market cap update." };
+        if (pairAddresses.length === 0) {
+            return { success: true, message: "No pairs in database to process for pair data update." };
         }
         
-        console.log(`[MarketCap Task] Found ${allContractAddresses.length} addresses to update.`);
+        console.log(`[PairData Task] Found ${pairAddresses.length} pairs to update from DexScreener.`);
 
-        const BATCH_SIZE = 10;
         let updatedCount = 0;
         let failedCount = 0;
         
-        for (let i = 0; i < allContractAddresses.length; i += BATCH_SIZE) {
-            const batch = allContractAddresses.slice(i, i + BATCH_SIZE);
-            console.log(`[MarketCap Task] Processing batch ${i / BATCH_SIZE + 1} with ${batch.length} addresses...`);
+        for (const pairAddress of pairAddresses) {
             try {
-                const marketData = await fetchOkxMarketData(batch);
-                console.log('[MarketCap Task] Received market data from OKX:', JSON.stringify(marketData, null, 2));
-
-
-                if (marketData && marketData.length > 0) {
-                    const operations = marketData.map(item => ({
-                        updateOne: {
-                            filter: { 
-                                $or: [
-                                    { "baseToken.address": item.tokenContractAddress },
-                                    { "quoteToken.address": item.tokenContractAddress }
-                                ]
-                            },
-                            update: { 
-                                $set: { 
-                                    marketCap: parseFloat(item.marketCap) 
-                                } 
-                            }
-                        }
-                    }));
-
-                    if (operations.length > 0) {
-                        const result = await pairsCollection.bulkWrite(operations);
-                        updatedCount += result.modifiedCount;
-                        console.log(`[MarketCap Task] Batch updated. Matched: ${result.matchedCount}, Modified: ${result.modifiedCount}`);
-                    }
-                }
+                const pairData = await fetchPairData(pairAddress);
                 
-                await sleep(1000); // Sleep between batches to avoid rate limiting
+                if (pairData && pairData.pair) {
+                    const updateData = pairData.pair;
+                    // DexScreener uses pairAddress, but our _id is the same, so we don't need to add it.
+                    // We just update the document with the new data.
+                    const result = await pairsCollection.updateOne(
+                        { _id: pairAddress },
+                        { $set: { ...updateData, lastUpdated: new Date() } }
+                    );
+                    
+                    if (result.modifiedCount > 0) {
+                        updatedCount++;
+                    }
+                } else {
+                     console.warn(`[PairData Task] No pair data returned for address: ${pairAddress}`);
+                     failedCount++;
+                }
+
+                await sleep(1000); // Sleep 1 second between requests to avoid rate limiting
             } catch (error: any) {
-                console.error(`[MarketCap Task] Failed to process batch: ${error.message}`);
-                failedCount += batch.length;
+                console.error(`[PairData Task] Failed to process pair ${pairAddress}: ${error.message}`);
+                failedCount++;
             }
         }
         
-        const message = `Market cap update complete. Successfully updated: ${updatedCount}, Failed to process: ${failedCount}.`;
-        console.log(`[MarketCap Task] ${message}`);
+        const message = `Pair data update from DexScreener complete. Successfully updated: ${updatedCount}, Failed to process: ${failedCount}.`;
+        console.log(`[PairData Task] ${message}`);
         return { success: true, message: message };
 
     } catch (error: any) {
-        console.error('[MarketCap Task] A critical error occurred in updateMarketCapData:', error);
-        return { success: false, error: `Failed to update market cap data: ${error.message}` };
+        console.error('[PairData Task] A critical error occurred in updatePairDataFromDexScreener:', error);
+        return { success: false, error: `Failed to update pair data: ${error.message}` };
     }
 }

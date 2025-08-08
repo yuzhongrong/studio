@@ -43,13 +43,13 @@ function sign(message: string, secret: string) {
 export async function fetchOkxMarketData(tokens: string[]): Promise<MarketData[]> {
     const OKX_API_KEY = '73b6baca-5b81-4cb0-b263-7eacea0f064a';
     const OKX_SECRET_KEY = 'ECD61FCC9D17DDA622FB4FA19D11C096';
-    const OKX_PASSPHRASE = 'Abc5341842';
+    const OKX_PASSPHRASE = 'Abc5341842...';
 
     if (!OKX_API_KEY || !OKX_SECRET_KEY || !OKX_PASSPHRASE) {
         throw new Error('Missing OKX API credentials in environment variables.');
     }
     
-    const requestPath = '/api/v5/dex/market/price-info';
+    const requestPath = '/api/v5/dex/market/price';
     const method = 'POST';
     const bodyPayload = {
         chainIndex: '501',

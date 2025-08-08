@@ -1,17 +1,19 @@
 // This is a server-side only module
 import { fetchApiData, updateRsiData } from '@/app/actions';
-import { updateMarketCapData } from '@/app/actions/update-market-cap';
+import { updatePairDataFromDexScreener } from '@/app/actions/update-market-cap';
+
 
 const DEXSCREENER_POLLING_INTERVAL_MS = 60000; // 1 minute
 const RSI_POLLING_INTERVAL_MS = 30000; // 30 seconds
-const MARKET_CAP_POLLING_INTERVAL_MS = 45000; // 45 seconds
+const PAIR_DATA_POLLING_INTERVAL_MS = 45000; // 45 seconds
+
 
 const API_ENDPOINT = "https://dexscreen-scraper-delta.vercel.app/dex?generated_text=%26filters%5BmarketCap%5D%5Bmin%5D%3D2000000%26filters%5BchainIds%5D%5B0%5D%3Dsolana";
 
 let isPolling = false;
 let isStarted = false; 
 let isRsiTaskRunning = false;
-let isMarketCapTaskRunning = false;
+let isPairDataTaskRunning = false;
 
 function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -72,34 +74,34 @@ async function pollRsiData() {
 }
 
 /**
- * Task 3: Periodically updates market cap data from OKX.
+ * Task 3: Periodically updates pair data from DexScreener.
  * This function uses a lock to prevent overlapping executions.
  */
-async function pollMarketCapData() {
-    console.log('Starting Market Cap data polling loop.');
+async function pollPairData() {
+    console.log('Starting Pair Data polling loop from DexScreener.');
     while(isPolling) {
-        if (isMarketCapTaskRunning) {
-            console.warn('Market Cap update is still running. Skipping this cycle.');
-            await sleep(MARKET_CAP_POLLING_INTERVAL_MS);
+        if (isPairDataTaskRunning) {
+            console.warn('Pair Data update is still running. Skipping this cycle.');
+            await sleep(PAIR_DATA_POLLING_INTERVAL_MS);
             continue;
         }
 
         try {
-            isMarketCapTaskRunning = true;
-            console.log('Triggering Market Cap data update from OKX...');
-            const marketCapResult = await updateMarketCapData();
+            isPairDataTaskRunning = true;
+            console.log('Triggering Pair Data update from DexScreener...');
+            const pairDataResult = await updatePairDataFromDexScreener();
             
-            if (marketCapResult.error) {
-                console.error('Market Cap update process finished with an error:', marketCapResult.error);
+            if (pairDataResult.error) {
+                console.error('Pair Data update process finished with an error:', pairDataResult.error);
             } else {
-                console.log('Market Cap update process finished successfully.', marketCapResult.message);
+                console.log('Pair Data update process finished successfully.', pairDataResult.message);
             }
         } catch (error) {
-            console.error('An unexpected error occurred during the Market Cap polling loop:', error);
+            console.error('An unexpected error occurred during the Pair Data polling loop:', error);
         } finally {
-            isMarketCapTaskRunning = false;
+            isPairDataTaskRunning = false;
         }
-        await sleep(MARKET_CAP_POLLING_INTERVAL_MS);
+        await sleep(PAIR_DATA_POLLING_INTERVAL_MS);
     }
 }
 
@@ -116,7 +118,7 @@ export function startPolling() {
   // Start all polling loops to run in parallel
   pollDexscreenerData();
   pollRsiData();
-  pollMarketCapData();
+  pollPairData();
 }
 
 export function stopPolling() {
