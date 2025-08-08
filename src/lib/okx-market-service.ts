@@ -48,9 +48,9 @@ function sign(message: string, secret: string) {
  * @returns A promise that resolves to an array of market data objects.
  */
 export async function fetchOkxMarketData(tokens: MarketDataPayload): Promise<MarketData[]> {
-    const OKX_API_KEY = '9a31548a-6b3a-4f5c-89b5-78d1f7e0349b';
+    const OKX_API_KEY = '73b6baca-5b81-4cb0-b263-7eacea0f064a';
     const OKX_SECRET_KEY = 'ECD61FCC9D17DDA622FB4FA19D11C096';
-    const OKX_PASSPHRASE = 'shuai1999';
+    const OKX_PASSPHRASE = 'Abc5341842...';
 
     if (!OKX_API_KEY || !OKX_SECRET_KEY || !OKX_PASSPHRASE) {
         throw new Error('Missing OKX API credentials.');
