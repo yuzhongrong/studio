@@ -39,18 +39,10 @@ export async function updateMarketCapData() {
         let failedCount = 0;
         
         for (let i = 0; i < allContractAddresses.length; i += BATCH_SIZE) {
-            const batchAddresses = allContractAddresses.slice(i, i + BATCH_SIZE);
-            
-            // Transform the batch into the required format for the API
-            const batchPayload = batchAddresses.map(address => ({
-                chainIndex: "501", // Assuming Solana chain index
-                tokenContractAddress: address
-            }));
-            
-            console.log(`[MarketCap Task] Processing batch ${Math.floor(i / BATCH_SIZE) + 1} with ${batchPayload.length} addresses...`);
-
+            const batch = allContractAddresses.slice(i, i + BATCH_SIZE);
+            console.log(`[MarketCap Task] Processing batch ${i / BATCH_SIZE + 1} with ${batch.length} addresses...`);
             try {
-                const marketData = await fetchOkxMarketData(batchPayload);
+                const marketData = await fetchOkxMarketData(batch);
                 console.log('[MarketCap Task] Received market data from OKX:', JSON.stringify(marketData, null, 2));
 
 
@@ -81,7 +73,7 @@ export async function updateMarketCapData() {
                 await sleep(1000); // Sleep between batches to avoid rate limiting
             } catch (error: any) {
                 console.error(`[MarketCap Task] Failed to process batch: ${error.message}`);
-                failedCount += batchPayload.length;
+                failedCount += batch.length;
             }
         }
         

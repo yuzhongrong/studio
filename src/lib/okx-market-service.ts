@@ -22,14 +22,7 @@ export interface MarketData {
     volume5M: string;
 }
 
-export type MarketDataPayload = {
-    chainIndex: string;
-    tokenContractAddress: string;
-}[];
-
-
 function getTimestamp() {
-    // OKX API requires timestamp in ISO8601 format with milliseconds.
     return new Date().toISOString();
 }
 
@@ -44,21 +37,25 @@ function sign(message: string, secret: string) {
 
 /**
  * Fetches market data from OKX API for a specific list of tokens.
- * @param tokens An array of token objects, each with a chainIndex and tokenContractAddress.
+ * @param tokens An array of token contract address strings.
  * @returns A promise that resolves to an array of market data objects.
  */
-export async function fetchOkxMarketData(tokens: MarketDataPayload): Promise<MarketData[]> {
-    const OKX_API_KEY = '73b6baca-5b81-4cb0-b263-7eacea0f064a';
-    const OKX_SECRET_KEY = 'ECD61FCC9D17DDA622FB4FA19D11C096';
-    const OKX_PASSPHRASE = 'Abc5341842...';
+export async function fetchOkxMarketData(tokens: string[]): Promise<MarketData[]> {
+    const OKX_API_KEY = process.env.OK_ACCESS_KEY;
+    const OKX_SECRET_KEY = process.env.OK_SECRET_KEY;
+    const OKX_PASSPHRASE = process.env.OK_ACCESS_PASSPHRASE;
 
     if (!OKX_API_KEY || !OKX_SECRET_KEY || !OKX_PASSPHRASE) {
-        throw new Error('Missing OKX API credentials.');
+        throw new Error('Missing OKX API credentials in environment variables.');
     }
     
-    const requestPath = '/api/v5/dex/market/price';
+    const requestPath = '/api/v5/dex/market/price-info';
     const method = 'POST';
-    const bodyString = JSON.stringify(tokens);
+    const bodyPayload = {
+        chainIndex: '501',
+        tokenContractAddress: tokens.join(',')
+    };
+    const bodyString = JSON.stringify(bodyPayload);
     
     const timestamp = getTimestamp();
     const message = preHash(timestamp, method, requestPath, bodyString);
