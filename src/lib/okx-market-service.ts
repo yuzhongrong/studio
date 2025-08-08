@@ -42,7 +42,6 @@ function sign(message: string, secret: string) {
  */
 export async function fetchOkxMarketData(tokenContractAddresses: string[]): Promise<MarketData[]> {
     // Hardcoded credentials for debugging.
-    // PLEASE REPLACE a YOUR_OK_ACCESS_KEY and YOUR_OK_ACCESS_PASSPHRASE with your actual credentials.
     const OKX_API_KEY = '9a31548a-6b3a-4f5c-89b5-78d1f7e0349b';
     const OKX_SECRET_KEY = 'ECD61FCC9D17DDA622FB4FA19D11C096';
     const OKX_PASSPHRASE = 'shuai1999';
