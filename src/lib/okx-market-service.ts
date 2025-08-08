@@ -23,7 +23,8 @@ export interface MarketData {
 }
 
 function getTimestamp() {
-    return new Date().toISOString();
+    // OKX API requires timestamp in ISO8601 format without milliseconds.
+    return new Date().toISOString().slice(0, -5) + 'Z';
 }
 
 function preHash(timestamp: string, method: string, requestPath: string, body: string) {
