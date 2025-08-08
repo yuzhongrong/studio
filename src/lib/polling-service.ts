@@ -1,13 +1,17 @@
 // This is a server-side only module
 import { fetchApiData, updateRsiData } from '@/app/actions';
+import { updateMarketCapData } from '@/app/actions/update-market-cap';
 
 const DEXSCREENER_POLLING_INTERVAL_MS = 60000; // 1 minute
 const RSI_POLLING_INTERVAL_MS = 30000; // 30 seconds
+const MARKET_CAP_POLLING_INTERVAL_MS = 45000; // 45 seconds
+
 const API_ENDPOINT = "https://dexscreen-scraper-delta.vercel.app/dex?generated_text=%26filters%5BmarketCap%5D%5Bmin%5D%3D2000000%26filters%5BchainIds%5D%5B0%5D%3Dsolana";
 
 let isPolling = false;
 let isStarted = false; 
-let isRsiTaskRunning = false; // Execution lock for the RSI task
+let isRsiTaskRunning = false;
+let isMarketCapTaskRunning = false;
 
 function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -67,6 +71,38 @@ async function pollRsiData() {
     }
 }
 
+/**
+ * Task 3: Periodically updates market cap data from OKX.
+ * This function uses a lock to prevent overlapping executions.
+ */
+async function pollMarketCapData() {
+    console.log('Starting Market Cap data polling loop.');
+    while(isPolling) {
+        if (isMarketCapTaskRunning) {
+            console.warn('Market Cap update is still running. Skipping this cycle.');
+            await sleep(MARKET_CAP_POLLING_INTERVAL_MS);
+            continue;
+        }
+
+        try {
+            isMarketCapTaskRunning = true;
+            console.log('Triggering Market Cap data update from OKX...');
+            const marketCapResult = await updateMarketCapData();
+            
+            if (marketCapResult.error) {
+                console.error('Market Cap update process finished with an error:', marketCapResult.error);
+            } else {
+                console.log('Market Cap update process finished successfully.', marketCapResult.message);
+            }
+        } catch (error) {
+            console.error('An unexpected error occurred during the Market Cap polling loop:', error);
+        } finally {
+            isMarketCapTaskRunning = false;
+        }
+        await sleep(MARKET_CAP_POLLING_INTERVAL_MS);
+    }
+}
+
 
 export function startPolling() {
   if (isStarted) {
@@ -77,9 +113,10 @@ export function startPolling() {
 
   console.log('Background polling services started.');
 
-  // Start both polling loops to run in parallel
+  // Start all polling loops to run in parallel
   pollDexscreenerData();
   pollRsiData();
+  pollMarketCapData();
 }
 
 export function stopPolling() {

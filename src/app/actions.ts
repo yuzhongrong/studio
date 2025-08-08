@@ -1,3 +1,4 @@
+
 'use server';
 
 import { suggestFilters, SuggestFiltersInput } from '@/ai/flows/suggest-filters';
@@ -144,6 +145,7 @@ export async function updateRsiData() {
 
         for (const pairIdDoc of pairIds) {
             try {
+                // Fetch the latest pair data inside the loop
                 const pair = await pairsCollection.findOne({ _id: pairIdDoc._id });
                 if (!pair) {
                     console.warn(`Could not find pair with ID ${pairIdDoc._id}, it might have been deleted.`);
@@ -185,10 +187,9 @@ export async function updateRsiData() {
                     const fiveDaysAgo = new Date(now.getTime() - (5 * 24 * 60 * 60 * 1000));
                     
                     let isPairOldEnough = false;
-                    if (pair.pairCreatedAt) {
-                        const createdAtTimestamp = pair.pairCreatedAt as number;
-                        const createdAtDate = new Date(createdAtTimestamp);
-
+                    if (pair.pairCreatedAt && typeof pair.pairCreatedAt === 'number') {
+                        const createdAtDate = new Date(pair.pairCreatedAt);
+                        // Check if creation date is in the past AND older than 5 days
                         if (createdAtDate <= now && createdAtDate < fiveDaysAgo) {
                             isPairOldEnough = true;
                         }
@@ -248,11 +249,8 @@ CA: \`${alertData.tokenContractAddress}\`
 
             } catch (error: any) {
                 failedCount++;
-                if (pair && pair.pairAddress) {
-                    console.error(`Failed to process RSI for pair ${pair.pairAddress}: ${error.message}`);
-                } else {
-                    console.error(`Failed to process RSI for a pair: ${error.message}`);
-                }
+                const pairId = pairIdDoc._id;
+                console.error(`Failed to process RSI for pair ${pairId}: ${error.message}`);
                 await sleep(1000);
             }
         }
@@ -268,7 +266,6 @@ CA: \`${alertData.tokenContractAddress}\`
 }
     
 
-    
 
 
 
