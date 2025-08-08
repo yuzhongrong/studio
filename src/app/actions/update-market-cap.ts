@@ -43,6 +43,8 @@ export async function updateMarketCapData() {
             console.log(`[MarketCap Task] Processing batch ${i / BATCH_SIZE + 1}...`);
             try {
                 const marketData = await fetchOkxMarketData(batch);
+                console.log('[MarketCap Task] Received market data from OKX:', JSON.stringify(marketData, null, 2));
+
 
                 if (marketData && marketData.length > 0) {
                     const operations = marketData.map(item => ({
