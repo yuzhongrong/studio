@@ -1,4 +1,3 @@
-
 /**
  * @fileOverview Service for fetching OKX market data (price, market cap).
  * This service handles API signing as required by OKX.
@@ -66,6 +65,15 @@ export async function fetchOkxMarketData(tokenContractAddresses: string[]): Prom
         'OK-ACCESS-PASSPHRASE': OKX_PASSPHRASE,
         'Content-Type': 'application/json',
     };
+
+    // --- DEBUG LOGGING ---
+    console.log('[MarketCap Task] Preparing OKX API Request...');
+    console.log(`[MarketCap Task] Request URL: ${url}`);
+    console.log(`[MarketCap Task] Request Method: ${method}`);
+    console.log('[MarketCap Task] Request Headers:', JSON.stringify(headers, null, 2));
+    console.log('[MarketCap Task] Request Body:', body);
+    // --- END DEBUG LOGGING ---
+
 
     const response = await fetch(url, { method, headers, body, cache: 'no-store' });
     
