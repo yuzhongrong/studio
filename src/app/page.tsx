@@ -59,7 +59,7 @@ const filterSchema = z.object({
     .min(10, { message: "Please describe the data you're looking for." }),
 });
 
-export default function Home() {
+export default function Page() {
   const { toast } = useToast();
   const [isFetchPending, startFetchTransition] = useTransition();
   const [isSuggestPending, startSuggestTransition] = useTransition();
