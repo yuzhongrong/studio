@@ -196,10 +196,11 @@ export async function updateRsiData() {
                     }
 
                     const isMarketCapHighEnough = pair.marketCap && pair.marketCap > 2000000;
+                    const isVolumeHighEnough = pair.volume?.h24 > 1000000;
 
-                    const finalAlertCondition = alertCondition && isPairOldEnough && isMarketCapHighEnough;
+                    const finalAlertCondition = alertCondition && isPairOldEnough && isMarketCapHighEnough && isVolumeHighEnough;
 
-                    console.log(`[Alert Check] For ${alertData.symbol}: RSI cond: ${alertCondition}, Pair old enough: ${isPairOldEnough}, MC > $2M: ${isMarketCapHighEnough}. Final: ${finalAlertCondition}`);
+                    console.log(`[Alert Check] For ${alertData.symbol}: RSI cond: ${alertCondition}, Pair old enough: ${isPairOldEnough}, MC > $2M: ${isMarketCapHighEnough}, Vol24h > $1M: ${isVolumeHighEnough}. Final: ${finalAlertCondition}`);
 
                     if (finalAlertCondition) {
                         console.log(`[Notification] Triggering alerts for ${alertData.symbol}`);
@@ -287,4 +288,5 @@ CA: \`${alertData.tokenContractAddress}\`
     
 
     
+
 
