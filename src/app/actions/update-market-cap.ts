@@ -32,6 +32,7 @@ export async function updatePairDataFromDexScreener() {
 
         let updatedCount = 0;
         let failedCount = 0;
+        let deletedCount = 0;
         
         for (const pairAddress of pairAddresses) {
             try {
@@ -39,6 +40,18 @@ export async function updatePairDataFromDexScreener() {
                 
                 if (pairData && pairData.pair) {
                     const updateData = pairData.pair;
+
+                    // New logic: Check market cap and delete if below threshold
+                    if (updateData.marketCap && updateData.marketCap < 2000000) {
+                        const deleteResult = await pairsCollection.deleteOne({ _id: pairAddress });
+                        if (deleteResult.deletedCount > 0) {
+                            deletedCount++;
+                            console.log(`[PairData Task] Deleted pair ${pairAddress} (Symbol: ${updateData.baseToken.symbol}) due to low market cap ($${updateData.marketCap}).`);
+                        }
+                        continue; // Skip to the next pair
+                    }
+
+
                     // DexScreener uses pairAddress, but our _id is the same, so we don't need to add it.
                     // We just update the document with the new data.
                     const result = await pairsCollection.updateOne(
@@ -61,7 +74,7 @@ export async function updatePairDataFromDexScreener() {
             }
         }
         
-        const message = `Pair data update from DexScreener complete. Successfully updated: ${updatedCount}, Failed to process: ${failedCount}.`;
+        const message = `Pair data update from DexScreener complete. Successfully updated: ${updatedCount}, Deleted: ${deletedCount}, Failed to process: ${failedCount}.`;
         console.log(`[PairData Task] ${message}`);
         return { success: true, message: message };
 
