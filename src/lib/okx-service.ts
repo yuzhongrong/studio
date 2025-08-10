@@ -1,4 +1,5 @@
 
+
 /**
  * @fileOverview Service for fetching OKX candle data and calculating RSI.
  */
@@ -10,6 +11,7 @@ export interface Candle {
   low: number;
   close: number;
   volume: number;
+  volUsd: number;
 }
 
 /**
@@ -111,6 +113,7 @@ export async function fetchOkxCandles(tokenAddress: string, bar: '5m' | '1H', li
         low: parseFloat(d[3]),
         close: parseFloat(d[4]),
         volume: parseFloat(d[5]),
+        volUsd: parseFloat(d[6]),
     }));
     
     return { parsedData };
