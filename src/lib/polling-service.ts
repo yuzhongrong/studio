@@ -5,7 +5,7 @@ import { updatePairDataFromDexScreener } from '@/app/actions/update-market-cap';
 
 const DEXSCREENER_POLLING_INTERVAL_MS = 60000; // 1 minute
 const RSI_POLLING_INTERVAL_MS = 30000; // 30 seconds
-const PAIR_DATA_POLLING_INTERVAL_MS = 300000; // 5 minutes
+const PAIR_DATA_POLLING_INTERVAL_MS = 60000; // 1 minute
 
 
 const API_ENDPOINT = "https://dexscreen-scraper-delta.vercel.app/dex?generated_text=%26filters%5BmarketCap%5D%5Bmin%5D%3D2000000%26filters%5BchainIds%5D%5B0%5D%3Dsolana";
