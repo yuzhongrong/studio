@@ -169,7 +169,6 @@ export async function updateRsiData() {
                 const rsi5m = calculateRSI(candles5m.map(c => c.close));
                 const rsi1h = calculateRSI(candles1h.map(c => c.close));
                 const currentPrice = candles5m && candles5m.length > 0 ? candles5m[0].close : null;
-                const volUsd1h = candles1h && candles1h.length > 0 ? candles1h[0].volUsd : null;
                 
                 if (rsi1h && rsi5m) {
                     const marketCapFormatted = formatMarketCap(pair.marketCap);
@@ -197,11 +196,10 @@ export async function updateRsiData() {
                     }
 
                     const isMarketCapHighEnough = pair.marketCap && pair.marketCap > 2000000;
-                    const isVolumeHighEnough = volUsd1h !== null && volUsd1h > 1000000;
 
-                    const finalAlertCondition = alertCondition && isPairOldEnough && isMarketCapHighEnough && isVolumeHighEnough;
+                    const finalAlertCondition = alertCondition && isPairOldEnough && isMarketCapHighEnough;
 
-                    console.log(`[Alert Check] For ${alertData.symbol}: RSI cond: ${alertCondition}, Pair old enough: ${isPairOldEnough}, MC > $2M: ${isMarketCapHighEnough}, Vol(1h) > $1M: ${isVolumeHighEnough}. Final: ${finalAlertCondition}`);
+                    console.log(`[Alert Check] For ${alertData.symbol}: RSI cond: ${alertCondition}, Pair old enough: ${isPairOldEnough}, MC > $2M: ${isMarketCapHighEnough}. Final: ${finalAlertCondition}`);
 
                     if (finalAlertCondition) {
                         console.log(`[Notification] Triggering alerts for ${alertData.symbol}`);
@@ -230,7 +228,6 @@ CA: \`${alertData.tokenContractAddress}\`
                     tokenContractAddress: tokenContractAddress,
                     'rsi-5m': rsi5m,
                     'rsi-1h': rsi1h,
-                    'volUsd-1h': volUsd1h,
                     current_price: currentPrice,
                     symbol: pair.baseToken?.symbol,
                     priceChange: pair.priceChange,
@@ -284,5 +281,7 @@ CA: \`${alertData.tokenContractAddress}\`
 
 
 
+
+    
 
     
