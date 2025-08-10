@@ -228,9 +228,8 @@ CA: \`${alertData.tokenContractAddress}\`
                     tokenContractAddress: tokenContractAddress,
                     'rsi-5m': rsi5m,
                     'rsi-1h': rsi1h,
-                    '24h_b': pair.txns?.h24?.buys,
-                    '24h_s': pair.txns?.h24?.sells,
-                    '24_vol': pair.volume?.h24,
+                    txns: pair.txns,
+                    volume: pair.volume,
                     current_price: currentPrice,
                     symbol: pair.baseToken?.symbol,
                     priceChange: pair.priceChange,
@@ -288,3 +287,4 @@ CA: \`${alertData.tokenContractAddress}\`
     
 
     
+
